@@ -36,7 +36,7 @@ are either proprietary and therefore not easily auditable or they require extens
  * End to end encryption
  * OAuth & 2-Factor Authentication
  * Zero access architecture means that the data can only be decrypted by the user and not the organization hosting the service
- * Complete anonymizzation of metadata, no IP addresses or visitor history logged, accessible over Tor
+ * Complete anonymization of metadata, no IP addresses or visitor history logged, accessible over Tor
  * Easily auditable since it's made entirely from open source cryptography tools
  * Calendar events, notes, and tasks that dissappear from all invited guests after a specified amount of time
  * Compatable with existing calendaring applications like outlook, thunderbird, evolution, and others by using the [iCalendar Spec RFC 5545](https://en.wikipedia.org/wiki/ICalendar) standard
@@ -63,4 +63,4 @@ We are not developing a front-end, we will use an existing application (such as 
     
 4. Database: understand [SQL](https://www.w3schools.com/sql/) commands, time complexities for queries, and database modeling. This is what the API will talk to after the user is authenticated. All data stored will be encrypted so this role overlaps with the security role.
 
-5. Infrastructure using [Docker](https://www.docker.com/what-docker) and [Kuberneties](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/): use the two tools to deliver a final product and write user manuals. This involves documentation for how users can implement our solution and it will be shown in the poster presentation. May include a demo using [Amazon Web Services](https://aws.amazon.com/) or [Google Cloud Engine](https://cloud.google.com/compute/).
+5. Infrastructure using [Docker](https://www.docker.com/what-docker) and [Kubernetes](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/): use the two tools to deliver a final product and write user manuals. This involves documentation for how users can implement our solution and it will be shown in the poster presentation. May include a demo using [Amazon Web Services](https://aws.amazon.com/) or [Google Cloud Engine](https://cloud.google.com/compute/).
