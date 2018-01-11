@@ -1,5 +1,7 @@
-# Secure Calendaring Infrastructure
-Open source solution for self hosted and infinitely scalable calendar, notes, and tasks.
+# SUM Calendaring
+### Server Under the Mountain (SUM) Group
+Open source solution for secure and highly scalable calendar, notes, and tasks.
+This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Senior Capstone](https://www.uncg.edu/cmp/) project, Spring 2018.
 
 ## Problem Statement
 As a user or organization I cannot easily host a cryptographically secure server to host calendaring data. Existing solutions
@@ -22,54 +24,23 @@ are either proprietary and therefore not easily auditable or they require extens
  * [Kuberneties](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/) enabled for infinitely scalable internal IT infrastructure or external services
 
 # Architecture Overview
-1. REST API lets clients authenticate using [OAuth](https://oauth.net/2/) (standard username and password setting) then lets them request their data from a server or update their data on a server. This API is hosted by the server and talks to a [SQL](https://en.wikipedia.org/wiki/SQL) server which accesses the user's data and decrypts it with their private key.
-    * This REST API can be developed in nearly any language and there are numerous libraries that make this simple. [Here](http://cherrypy.org/) is an example of a Python library that lets you host a REST API in as little as 5 lines.
-2. The API on the server responds to the client in a specific format, with the standard for calendar events being [iCalendar Spec RFC 5545](https://en.wikipedia.org/wiki/ICalendar). "Notes" and "Tasks" are just calendar events without due dates... many front end applications able to handle these differences.
+1. REST API lets clients authenticate using [OAuth](https://oauth.net/2/) (standard username and password setting) then lets them request their data from a server or update their data on a server. This REST API is hosted by the server and talks to a [SQL](https://en.wikipedia.org/wiki/SQL) server.
+    * REST API can be developed in nearly any language and there are numerous libraries that make this simple. [Here](http://cherrypy.org/) is an example of a Python library that lets you host a REST API in as little as 5 lines.
+2. The SQL server accesses the user's data and decrypts it with their private key which is transferred over SSL and not stored.
+3. The API on the REST server responds to the client in a specific format, with the standard for calendar events being [iCalendar Spec RFC 5545](https://en.wikipedia.org/wiki/ICalendar). "Notes" and "Tasks" are just calendar events without due dates... many front end applications able to handle these differences.
 
-The result of these two componenets is a service that will allow any user to access a secure calendar, notes, or tasks source from any app (google calendar, canvas calendar, apple, yahoo, thunderbird, evolution, outlook, etc). 
+The result of these three primary components is a service that will allow any user to access a secure calendar, notes, or tasks source from any app (google calendar, canvas calendar, apple, yahoo, thunderbird, evolution, outlook, etc). 
 
 # What are we going to demonstrate in the presentation?
-We are not developing a front-end, we will use an existing application (such as Outlook) to prove that our infrastructure works. A simple landing page such as [this](https://protonmail.com/) may be a nice visual to explain our security features and be the centerpiece of our final poster. We can make a simple diagram outlining the architecture of this project: a client talking to a server, the user authentication process, the server using its API to fetch user data, and the server responding back to the client with data. A general knowledge of networking and databases will get you through this entire project.
+We are not developing a front-end, we will use an existing application (such as Outlook) to prove that our infrastructure works. A simple landing page such as [this](https://protonmail.com/) may be a nice visual to explain our security features and be the centerpiece of our final poster. We can make a simple diagram outlining the architecture of this project: a client talking to a server, the user authentication process, the server using its API to fetch user data from a database, and the server responding back to the client with data. Further explanation on the tools we used for each component have high value in the presentation.
 
-# Roles 
-Of course there are overlapping responsibilities but these are the main components.
-1. Simple web design (see [landing page example](https://protonmail.com/)). No hosting experience needed since GitHub does that for us.
-   **Note your experience below**
-    * Collin: Very little web experience but I can get around
-    * Jessica:
-    * Alex:
-    * Michael:
-    * Luke:
+# Roles & Components 
+1. Simple web design using [MDL (material design lite)](https://mdl.io) which will be shown in the poster presentation - see [landing page example](https://protonmail.com/). No hosting experience needed since GitHub does that for us with [GitHub pages](https://pages.github.com). Languages: HTML and CSS.
+
+2. REST API development & networking: understand how servers work, how to make http calls and get a response. Must learn the [iCalendar Spec RFC 5545](https://en.wikipedia.org/wiki/ICalendar), serialize/deserialize .ics files in [JSON](https://www.w3schools.com/js/js_json_intro.asp).
+
+3. Security: use open source libraries to implement [OAuth](https://oauth.net/2/), [HTTPS](https://en.wikipedia.org/wiki/HTTPS), and many more security standards. This is a large part of the API and involves integration testing with front-end applications.
     
-2. Security: someone that can use open source libraries to implement user authentication, HTTPS, etc. (see architecture section above)
- **Note your experience below**
-    * Collin: I know many libraries for these tasks and I'm able implement it all
-    * Jessica:
-    * Alex:
-    * Michael:
-    * Luke:
-    
-3. Database: understand SQL commands and time complexities for these queries 
-**Note your experience below**
-    * Collin: some experience with SQL, might need some catching up, not a problem since it's not a complex table
-    * Jessica:
-    * Alex:
-    * Michael:
-    * Luke:
-    
-4. REST API development & networking: understand how servers work, how to make http calls and get a response. (see architecture section above)
-**Note your experience below**
-    * Collin: I've designed and developed several APIs over the past few years. Would be happy to lead this and teach about it.
-    * Jessica:
-    * Alex:
-    * Michael:
-    * Luke:
-    
- 5. Infrastructure using Docker and Kuberneties
- **Note your experience below**
-    * Collin: Experienced using Docker in large organizations, very little experience with kuberneties but I can lead both and teach if needed.
-    * Jessica:
-    * Alex:
-    * Michael:
-    * Luke:
-    
+4. Database: understand [SQL](https://www.w3schools.com/sql/) commands, time complexities for queries, and database modeling. This is what the API will talk to after the user is authenticated. All data stored will be encrypted so this role overlaps with the security role.
+
+5. Infrastructure using [Docker](https://www.docker.com/what-docker) and [Kuberneties](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/): use the two tools to deliver a final product and write user manuals. This involves documentation for how users can implement our solution and it will be shown in the poster presentation. May include a demo using [Amazon Web Services](https://aws.amazon.com/) or [Google Cloud Engine](https://cloud.google.com/compute/).
