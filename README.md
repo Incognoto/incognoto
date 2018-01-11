@@ -1,9 +1,9 @@
 # SUM Calendaring
 ### Server Under the Mountain (SUM) Group
 Open source solution for secure and highly scalable calendar, notes, and tasks.
-This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Senior Capstone](https://www.uncg.edu/cmp/) project, Spring 2018.
 
 ## Meet the Team
+This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Senior Capstone](https://www.uncg.edu/cmp/) project, Spring 2018.
 <table style="width:100%">
   <tr>
     <a href="https://www.linkedin.com/in/collinguarino/"><img src="https://avatars3.githubusercontent.com/u/3580553?s=460&v=4" width="100"> Collin Guarino @collinux </a>
