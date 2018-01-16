@@ -1,4 +1,6 @@
 # SUM Calendaring
+<img src="https://github.com/Collinux/sum-calendaring/blob/master/images/sum-logo.png?raw=true" width="200">
+
 ### Server Under the Mountain (SUM) Group
 Open source solution for secure and highly scalable calendar, notes, and tasks.
 
