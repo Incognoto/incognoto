@@ -1,2 +1,5 @@
-.gitignore
 *.DS_STORE
+android/build/android-profile/*
+*.swp
+.idea/
+.gradle/
