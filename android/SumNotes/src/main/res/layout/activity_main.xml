@@ -1,0 +1,74 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="#212121"
+    android:layout_height="match_parent">
+
+    <ListView
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:layout_below="@id/search_layout"
+        android:id="@+id/listview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:dividerHeight="2dp"
+        android:divider="#626262"/>
+
+    <!--Search Layout-->
+    <LinearLayout
+        android:id="@+id/search_layout"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:background="@android:color/transparent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white">
+
+            <EditText
+                android:maxWidth="300dp"
+                android:layout_weight="1"
+                android:inputType="text"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:imeOptions="flagNoPersonalizedLearning|actionDone"
+                android:focusableInTouchMode="true"
+                android:id="@+id/searchInput"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"
+                android:padding="12dp"
+                android:minWidth="300dp"
+                android:hint="Search"
+                android:textColorHint="@android:color/darker_gray"
+                android:background="@android:color/white"/>
+
+        </LinearLayout>
+
+        <!--Tag buttons are loaded into this view-->
+        <HorizontalScrollView
+            android:maxWidth="400dp"
+            android:layout_width="match_parent"
+            android:paddingTop="8dp"
+            android:scrollbars="none"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:id="@+id/tags"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content">
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+</RelativeLayout>

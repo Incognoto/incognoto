@@ -1,0 +1,35 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/add"
+        android:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="Add Note"/>
+
+    <item
+        android:id="@+id/search"
+        android:showAsAction="collapseActionView"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Search"/>
+
+    <item
+        android:id="@+id/passwords"
+        android:showAsAction="collapseActionView"
+        android:title="Passwords"/>
+
+    <item
+        android:id="@+id/restore"
+        android:showAsAction="collapseActionView"
+        android:title="Restore"/>
+
+    <item
+        android:id="@+id/backup"
+        android:showAsAction="collapseActionView"
+        android:title="Backup"/>
+
+    <item
+        android:id="@+id/deleteAll"
+        android:showAsAction="collapseActionView"
+        android:title="Delete All"/>
+
+</menu>
+
