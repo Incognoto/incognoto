@@ -28,6 +28,7 @@ public class Note {
     // Minimal requirements of a note. Notes do not have to have tags.
     public Note(String content) {
         this.content = content;
+        this.tags = new ArrayList<String>();
     }
 
     // All notes have content. This includes the "#tags" that were input.
