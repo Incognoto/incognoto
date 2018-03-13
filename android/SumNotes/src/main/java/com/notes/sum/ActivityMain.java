@@ -23,29 +23,17 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import com.notes.sum.sec.Note;
-
-import java.util.List;
+import com.notes.sum.sec.NoteManager;
 
 /**
  * App starts from here using the ActivityMain.xml layout file.
  */
 public class ActivityMain extends Activity {
-
-    private ListView listView;
-    private LinearLayout searchLayout;
-    private EditText searchInput;
-
-    public static ArrayAdapter<Note> adapter;
-    public static LinearLayout tagsLayout;
-
-    private static String password;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,62 +47,24 @@ public class ActivityMain extends Activity {
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
+        // Prompt user for password input and attempt to decrypt content
         // TODO: prompt for a password and attempt to decrypt
         setContentView(R.layout.activity_main);
-        password = "mypass"; // TODO: have user set this, store salt
-        List<Note> notes = Note.decrypt(ActivityMain.this, password);
-        adapter = new ArrayAdapter<Note>(this, R.layout.note_item);
-        if (notes != null) {
-            // TODO: tell user there are no notes or failure to decrypt
-            adapter.addAll(notes);
-        }
+        final String password = "mypass"; // TODO: have user set this, store salt
+        new NoteManager(
+            (ListView) findViewById(R.id.listview), ActivityMain.this, password,
+            (LinearLayout) findViewById(R.id.tags));
+        // TODO: show error if decrypt failed, do not call functions below
 
         // If you highlight text from another app you can select "share" then select this app.
         // Accepts string input from elsewhere, if you do it manually.
         Intent intent = getIntent();
         if (Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
-            // TODO: must enter password first!
             String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
             if (sharedText != null) {
-                Note note = new Note(adapter.getCount() + 1, sharedText);
-                adapter.add(note);
-                Note.saveChanges(ActivityMain.this, password);
+                NoteManager.addNote(new Note(sharedText));
             }
         }
-
-        // Create an empty adapter we will use to display the loaded data.
-        listView = (ListView) findViewById(R.id.listview);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Tag.noteContentPreview(false, ActivityMain.this, adapter.getItem(position));
-            }
-        });
-
-        // Show clickable tag buttons for quick categorical searches
-        searchLayout = (LinearLayout) findViewById(R.id.search_layout);
-        searchInput = (EditText) findViewById(R.id.searchInput);
-        tagsLayout = (LinearLayout) findViewById(R.id.tags);
-        Tag.compileTags(this);
-    }
-
-    // Toggle the hide/show of the search bar, options, and tags layout.
-    // If 'hide' is true then don't toggle, just hide the layout.
-    public void toggleSearchDisplay() {
-        if (searchLayout.getVisibility() == View.GONE)
-            showSearchDisplay();
-        else
-            hideSearchDisplay();
-    }
-
-    private void showSearchDisplay() {
-        searchLayout.setVisibility(View.VISIBLE);
-        searchInput.requestFocus();
-    }
-    private void hideSearchDisplay() {
-        searchInput.setText("");
-        searchLayout.setVisibility(View.GONE);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -136,22 +86,21 @@ public class ActivityMain extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.add:
-                hideSearchDisplay();
                 noteContentPreview(true, ActivityMain.this, null);
                 break;
             case R.id.search:
-                toggleSearchDisplay();
+                // TODO: show search on action bar
                 break;
             case R.id.deleteAll:
                 ActivityMain.showDeleteConfirmation(
-                        true, ActivityMain.this, 0, "Delete All Note?",
-                        "This action cannot be undone.");
+                        true, ActivityMain.this, "Delete All Notes?",
+                        "This action cannot be undone.", null);
                 break;
             case R.id.backup:
-                Note.backup();
+                NoteManager.backup();
                 break;
             case R.id.restore:
-                Note.restore();
+                NoteManager.restore();
                 break;
             default:
                 break;
@@ -163,7 +112,7 @@ public class ActivityMain extends Activity {
     // If `newNote` is true then this will insert a new note into the database,
     // else it will change the given note's content.
     public static void noteContentPreview(final boolean newNote,
-                                          final Context context, final Note noteCard) {
+                                          final Context context, final Note note) {
         final Dialog notePreviewDialog = new Dialog(context);
         notePreviewDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         notePreviewDialog.setContentView(R.layout.dialog_note_view);
@@ -180,9 +129,9 @@ public class ActivityMain extends Activity {
         notePreviewDialog.getWindow().setAttributes(lp);
 
         final EditText noteNameField = (EditText) notePreviewDialog.findViewById(R.id.textInput);
-        if (noteCard != null) {
+        if (note != null) {
             // This is not a new note, the user is making changes.
-            noteNameField.setText(noteCard.getNoteContent());
+            noteNameField.setText(note.getNoteContent());
             notePreviewDialog.findViewById(R.id.mainLayout).requestFocus();
         } else {
             // This is a new note, optimize fast input
@@ -204,10 +153,10 @@ public class ActivityMain extends Activity {
             @Override
             public boolean onKey(DialogInterface arg0, int keyCode, KeyEvent event) {
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
-                    if (noteCard != null && noteCard.getNoteContent().trim().equals(
+                    if (note != null && note.getNoteContent().trim().equals(
                             noteNameField.getText().toString().trim())) {
                         notePreviewDialog.dismiss();
-                    } else if (noteCard == null && noteNameField.getText().
+                    } else if (note == null && noteNameField.getText().
                             toString().trim().length() == 0) {
                         // This is a new note but no content was entered.
                         notePreviewDialog.dismiss();
@@ -222,10 +171,9 @@ public class ActivityMain extends Activity {
             public void onClick(View v) {
                 String content = noteNameField.getText().toString();
                 if (!newNote)
-                    adapter.remove(noteCard);
-                adapter.add(new Note(adapter.getCount() +1, content));
+                    NoteManager.removeNote(note); // Remove then re-addNote
+                NoteManager.addNote(new Note(content));
                 notePreviewDialog.dismiss();
-                Note.saveChanges(context, password);
             }
         });
 
@@ -233,12 +181,10 @@ public class ActivityMain extends Activity {
         notePreviewDialog.findViewById(R.id.delete).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (noteCard != null)
-                    showDeleteConfirmation(false, context, noteCard.getId(),
-                            "Delete This Note?", "This action cannot be undone.");
+                if (note != null)
+                    showDeleteConfirmation(false, context,
+                            "Delete This Note?", "This action cannot be undone.", note);
                 notePreviewDialog.dismiss();
-
-                Note.saveChanges(context, password);
             }
         });
 
@@ -259,20 +205,18 @@ public class ActivityMain extends Activity {
     // In the note preview dialog confirm the deletion action
     // If "all" is true then clear all notes
     public static void showDeleteConfirmation(final boolean all, final Context context,
-                                              final int position, final String title,
-                                              final String message) {
+                                              final String title, final String message,
+                                              final Note note) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setTitle(title);
         builder1.setMessage(message);
         builder1.setCancelable(true);
         builder1.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
-                if (all) {
-                    adapter.clear();
-                    Note.encrypt(context, "", password);
-                    return;
-                }
-                adapter.remove(adapter.getItem(position));
+                if (all)
+                    NoteManager.clearAll();
+                else
+                    NoteManager.removeNote(note);
             }
         });
         builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
