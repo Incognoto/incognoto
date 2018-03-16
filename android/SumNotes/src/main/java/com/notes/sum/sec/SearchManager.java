@@ -27,6 +27,9 @@ public class SearchManager {
     public ArrayList<String> getFoundNoteList(){
         return this.foundNoteList;
     }
+    private void addToFoundNotes(String match){
+        this.foundNoteList.add(match);
+    }
 
     public void setSearchString(String ss){
         this.searchString = ss;
@@ -35,13 +38,37 @@ public class SearchManager {
         return this.searchString;
     }
 
-    public ArrayList<String> search(ArrayList<String> noteList, String searchString){
-        //yadayadayada logic for search goes here
-        //Set the found note list before final
-        //Remember that this method will have to be recursive for and/or/not
-        return getFoundNoteList();
+    public void search(ArrayList<String> noteList, String searchString){
+        if(!parseforops(searchString)) {
+            for (int i = 0; i < noteList.size(); i++) {
+                if (contains(noteList.get(i), searchString)) {
+                    addToFoundNotes(noteList.get(i));
+                }
+            }
+            //yadayadayada logic for search goes here
+            //Set the found note list before final
+            //Remember that this method will have to be recursive for and/or/not
+        }
     }
 
+    //Logic for "and" operation in place
+    private boolean parseforops(String search){
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < search.length(); i++){
+            if(search.charAt(i) == '+' || search.charAt(i) == '|' || search.charAt(i) == '~'){
+                search(noteList,sb.toString());
+                sb = new StringBuilder();
+            }
+            else{
+                sb.append(search.charAt(i));
+            }
+        }
+        return false;
+    }
+    private boolean contains(String note, String search){
+        //regular expression
+        return false;
+    }
     private ArrayList<String> removeNotNotes(ArrayList<String> tempNoteList, String notKeyword){
         //Parses tempNoteList to remove any notes that contain notKeyword
         return getFoundNoteList();
