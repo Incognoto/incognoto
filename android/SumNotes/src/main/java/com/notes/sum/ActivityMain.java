@@ -15,6 +15,7 @@ import android.content.res.Resources;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -26,14 +27,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.notes.sum.sec.Note;
 import com.notes.sum.sec.NoteManager;
+
 
 /**
  * App starts from here using the ActivityMain.xml layout file.
  */
 public class ActivityMain extends Activity {
+
+    public static LinearLayout tagLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,13 +52,62 @@ public class ActivityMain extends Activity {
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
-        // Prompt user for password input and attempt to decrypt content
-        // TODO: prompt for a password and attempt to decrypt
+        // Load the view and show a password prompt to decrypt the content.
         setContentView(R.layout.activity_main);
-        final String password = "mypass"; // TODO: have user set this, store salt
+        tagLayout = (LinearLayout) findViewById(R.id.tags);
+        //displayPasswordDialog();
+
+        // TODO: allow user to set their password on first startup
+        loadNotes("mypass");
+    }
+
+    // Prompt user for password input and attempt to decrypt content
+    public void displayPasswordDialog() {
+        final Dialog inputDialog = new Dialog(ActivityMain.this);
+        inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        inputDialog.setContentView(R.layout.dialog_input);
+        inputDialog.setCanceledOnTouchOutside(false);
+        inputDialog.getWindow().setBackgroundDrawable(
+                new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(inputDialog.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+
+        final EditText input = (EditText) inputDialog.findViewById(R.id.input);
+        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                loadNotes(input.getText().toString());
+                inputDialog.dismiss();
+                return false;
+            }
+        });
+        inputDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                InputMethodManager imm = (InputMethodManager)
+                        ActivityMain.this.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadNotes(input.getText().toString());
+                inputDialog.dismiss();
+            }
+        });
+
+        inputDialog.show();
+    }
+
+    //
+    public void loadNotes(String password) {
         new NoteManager(
-            (ListView) findViewById(R.id.listview), ActivityMain.this, password,
-            (LinearLayout) findViewById(R.id.tags));
+                (ListView) findViewById(R.id.listview), ActivityMain.this, password,
+                (LinearLayout) findViewById(R.id.tags));
         // TODO: show error if decrypt failed, do not call functions below
 
         // If you highlight text from another app you can select "share" then select this app.
@@ -66,6 +120,7 @@ public class ActivityMain extends Activity {
             }
         }
     }
+
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override

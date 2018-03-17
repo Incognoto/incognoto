@@ -1,10 +1,12 @@
 package com.notes.sum.sec;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
@@ -12,6 +14,7 @@ import com.notes.sum.ActivityMain;
 import com.notes.sum.R;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -21,16 +24,24 @@ import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * File management for encrypted notes
  */
 public class NoteManager {
     // Feeds notes to the list view
-    protected static ArrayAdapter<Note> adapter;
+    private static ArrayAdapter<Note> adapter;
+    private static ArrayAdapter<Note> filteredAdapter;
     private static Context context;
     private static String password;
+    private static LinearLayout tagLayout;
+    private static ListView listView;
 
     // Separates note objects in document form
     private static final String delimiter = "\n---\n";
@@ -40,11 +51,19 @@ public class NoteManager {
         this.context = context;
         this.password = password;
         this.adapter = new ArrayAdapter<Note>(context, R.layout.note_item);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        this.filteredAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
+        this.tagLayout = tagLayout;
+        this.listView = listView;
+        this.listView.setAdapter(adapter);
+        this.listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ActivityMain.noteContentPreview(false, context, adapter.getItem(position));
+                if (filteredAdapter.getCount() > 0) {
+                    // Filter being used, show relevent items
+                    ActivityMain.noteContentPreview(false, context, filteredAdapter.getItem(position));
+                } else {
+                    ActivityMain.noteContentPreview(false, context, adapter.getItem(position));
+                }
             }
         });
 
@@ -52,8 +71,8 @@ public class NoteManager {
         List<Note> notes = NoteManager.decrypt();
         if (notes != null) {
             adapter.addAll(notes);
+            showTagUI();
         }
-        new TagManager(context, tagLayout);
     }
 
     public static void backup() {
@@ -74,7 +93,7 @@ public class NoteManager {
         for(int i = 0; i < adapterSize; i++) {
             tempAdapter.add(adapter.getItem(i));
         }
-        Thread thread = new Thread() {
+        Thread encryptThread = new Thread() {
             @Override
             public void run() {
                 String allData = "";
@@ -84,50 +103,106 @@ public class NoteManager {
                 NoteManager.encrypt(allData);
             }
         };
-        thread.start();
+        encryptThread.start();
+        showTagUI();
+    }
+
+    private static void showTagUI() {
+        tagLayout.removeAllViews(); // Start with a fresh view. This operation is low overhead.
+
+        // Go through all items in the list view
+        for (int i = 0; i < adapter.getCount(); i++) {
+            final Note note = adapter.getItem(i);
+
+            // For each tag in a note add a button to the main activity's tag section.
+            // TODO: avoid duplicates
+            for (final String tag : note.getTags()) {
+                ActivityMain.tagLayout.addView(createTagButton(tag));
+            }
+        }
+    }
+
+    // Create a button that's loaded into the tagLayout which allows users to filter
+    // notes by their associated tags.
+    private static Button createTagButton(final String tag) {
+        Button tagButton = new Button(context);
+        tagButton.setText(tag);
+        tagButton.setLayoutParams(new LinearLayout.LayoutParams(
+                ActionBar.LayoutParams.WRAP_CONTENT, ActionBar.LayoutParams.WRAP_CONTENT));
+        tagButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // Search through all notes
+                filteredAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
+                for (int i = 0; i < adapter.getCount(); i++) {
+
+                    // Search through all the tags in each note for a match
+                    Note targetNote = adapter.getItem(i);
+                    for (String targetTag : targetNote.getTags()) {
+                        if (tag.equals(targetTag))
+                            filteredAdapter.add(targetNote);
+                    }
+                }
+                listView.setAdapter(filteredAdapter);
+                tagLayout.removeAllViews();
+
+                // Since notes with a specific tag are being shown, add a new button to
+                // the tags layout that will allow users to clear the tag filter.
+                // This restores the state of the main activity's list view back to normal.
+                Button clearFilter = new Button(context);
+                clearFilter.setText("Clear Filter For " + tag);
+                clearFilter.setLayoutParams(new LinearLayout.LayoutParams(
+                        ActionBar.LayoutParams.WRAP_CONTENT, ActionBar.LayoutParams.WRAP_CONTENT));
+                clearFilter.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // Restore the non-filtered adapter, rebuild the tags layout
+                        filteredAdapter.clear();
+                        listView.setAdapter(adapter);
+                        showTagUI();
+                    }
+                });
+                tagLayout.addView(clearFilter, 0);
+            }
+        });
+        return tagButton;
     }
 
     // Remove a note and reload the list view to reflect the changes
     public static void removeNote(Note note) {
         adapter.remove(note);
         saveChanges(adapter);
-        TagManager.removeTags(note.getTags());
     }
 
     // Delete all notes and tags
     // Called by the "Delete All" menu option
     public static void clearAll() {
         adapter.clear();
-        TagManager.clearTags();
         saveChanges(adapter);
     }
 
     // Add a note and reload the list view to reflect the changes
     public static void addNote(Note note) {
-        adapter.insert(new Note(note.getNoteContent()), 0); // Always add to top (index 0)
+        adapter.insert(note, 0); // Always add to top (index 0)
         saveChanges(adapter);
-        TagManager.addTags(TagManager.findTags(note));
     }
 
     /**
      * Reading and Writing encrypted Note objects
      */
-    // TODO: generate salt once and store in sandboxed app storage
-    private static byte[] salt = new byte[]{'s', 'a', 'l', 't'};
 
     public static void encrypt(String message) {
         try {
-            // Encrypt plaintext
-            //String salt = saltString(generateSalt());
-            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, salt);
+            // Convert the plain text to a cipher string
+            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
             AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac = AesCbcWithIntegrity.encrypt(message, key);
             String ciphertextString = cipherTextIvMac.toString();
-            Log.e("NOTES", ciphertextString);
 
-            // Write cipher to local file
-            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
-            outputStream.write(ciphertextString.getBytes());
-            outputStream.close();
+            // Write cipher string to the encrypted file in private mode
+            FileOutputStream cipherStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+            cipherStream.write(ciphertextString.getBytes());
+            cipherStream.close();
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
@@ -139,9 +214,36 @@ public class NoteManager {
         }
     }
 
+    private static byte[] getSalt() throws GeneralSecurityException {
+        FileInputStream fileInputStream = null;
+        try {
+            // If the file doesn't exist then generate a salt
+            File file = context.getFileStreamPath("salt");
+            if (file == null || !file.exists()) {
+                FileOutputStream cipherStream = context.openFileOutput("salt", Context.MODE_PRIVATE);
+                cipherStream.write(AesCbcWithIntegrity.generateSalt());
+                cipherStream.close();
+            }
+
+            fileInputStream = context.openFileInput("salt");
+            BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
+            String line;
+            String allContent = "";
+            while ((line = br.readLine()) != null) {
+                allContent += line;
+            }
+            return allContent.getBytes();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return AesCbcWithIntegrity.generateSalt();
+    }
+
     public static List<Note> decrypt() {
         try {
-            // Read the file contents and decrypt it all
+            // Read the cipher text
             FileInputStream fileInputStream = context.openFileInput("notes");
             BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
             String line;
@@ -149,8 +251,9 @@ public class NoteManager {
             while ((line = br.readLine()) != null) {
                 allContent += line;
             }
-            //String salt = saltString(generateSalt()); // TODO: access saved salt
-            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, salt);
+
+            // Decrypt the cipher text and add plain text note content to the main activity
+            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
             AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
                     new AesCbcWithIntegrity.CipherTextIvMac(allContent);
             allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
@@ -173,7 +276,6 @@ public class NoteManager {
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         }
-        // TODO: handle all errors
-        return null;
+        return new ArrayList<Note>();
     }
 }
