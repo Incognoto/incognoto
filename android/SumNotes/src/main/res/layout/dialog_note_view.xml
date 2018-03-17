@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2018 Server Under the Mountain (SUM) License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html-->
+
 <!--View used for adding a new note or changing the content of an old one-->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

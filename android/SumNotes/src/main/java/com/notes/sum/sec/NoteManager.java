@@ -1,3 +1,7 @@
+/*
+* Copyright (C) 2018 Server Under the Mountain (SUM)
+* License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
+*/
 package com.notes.sum.sec;
 
 import android.app.ActionBar;
