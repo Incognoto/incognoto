@@ -22,6 +22,10 @@ Store encrypted backups on any cloud while keeping your data locked behind a mas
     Use #Hashtags, words, or phrases to find a note.
 ### Further Information Available
     Check out our website.
+### Proof of concept for website
+[Github code](https://github.com/Maburke/test-website)
+
+[test-site](https://maburke.github.io/test-website/)
 
 
 ## Meet the Team
