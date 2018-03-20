@@ -27,6 +27,7 @@
             android:focusableInTouchMode="true">
 
             <EditText
+                android:hint="Note to self..."
                 android:lineSpacingMultiplier="1.2"
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:minHeight="140dp"

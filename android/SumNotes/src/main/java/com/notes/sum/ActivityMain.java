@@ -11,11 +11,13 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.StrictMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -28,10 +30,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.notes.sum.sec.Note;
 import com.notes.sum.sec.NoteManager;
-
 
 /**
  * App starts from here using the ActivityMain.xml layout file.
@@ -44,10 +46,10 @@ public class ActivityMain extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Secure the view: disable screenshots and block other apps from acquiring screen content
-        // Also hide notes in the "recent" app preview list
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             // Additional screen security options in versions later than JellyBean
+            // Hide notes in the "recent" app preview list
             getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
@@ -55,20 +57,29 @@ public class ActivityMain extends Activity {
         // Load the view and show a password prompt to decrypt the content.
         setContentView(R.layout.activity_main);
         tagLayout = (LinearLayout) findViewById(R.id.tags);
-        //displayPasswordDialog();
 
-        // TODO: allow user to set their password on first startup
-        loadNotes("mypass");
+        SharedPreferences sharedPrefs = getSharedPreferences("temp", MODE_PRIVATE);
+        if (sharedPrefs.getBoolean("default", true)) {
+            // This is the first startup and user does not have a generated master password
+            NoteManager.newDefaultKey(ActivityMain.this);
+            sharedPrefs.edit().putBoolean("default", false).commit(); // Never generate pass again
+        }
+        if (NoteManager.usingDefaultPassword(ActivityMain.this)) {
+            loadNotes(null);
+        } else {
+            displayPasswordDialog("Notes Are Locked");
+        }
     }
 
     // Prompt user for password input and attempt to decrypt content
-    public void displayPasswordDialog() {
+    public void displayPasswordDialog(String title) {
         final Dialog inputDialog = new Dialog(ActivityMain.this);
-        inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        inputDialog.setCancelable(false);
         inputDialog.setContentView(R.layout.dialog_input);
         inputDialog.setCanceledOnTouchOutside(false);
         inputDialog.getWindow().setBackgroundDrawable(
                 new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        inputDialog.setTitle(title);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(inputDialog.getWindow().getAttributes());
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
@@ -103,12 +114,14 @@ public class ActivityMain extends Activity {
         inputDialog.show();
     }
 
-    //
     public void loadNotes(String password) {
-        new NoteManager(
+        NoteManager nm = new NoteManager(
                 (ListView) findViewById(R.id.listview), ActivityMain.this, password,
                 (LinearLayout) findViewById(R.id.tags));
-        // TODO: show error if decrypt failed, do not call functions below
+        if (nm.status == null || nm == null) {
+            displayPasswordDialog("Invalid Password");
+            return;
+        }
 
         // If you highlight text from another app you can select "share" then select this app.
         // Accepts string input from elsewhere, if you do it manually.
@@ -156,6 +169,9 @@ public class ActivityMain extends Activity {
                 break;
             case R.id.restore:
                 NoteManager.restore();
+                break;
+            case R.id.newPassword:
+                showNewMasterPasswordDialog();
                 break;
             default:
                 break;
@@ -255,6 +271,68 @@ public class ActivityMain extends Activity {
         });
 
         notePreviewDialog.show();
+    }
+
+    public void showNewMasterPasswordDialog() {
+        final Dialog inputDialog = new Dialog(ActivityMain.this);
+        //inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        inputDialog.setContentView(R.layout.dialog_password_change);
+        inputDialog.setCanceledOnTouchOutside(false);
+        inputDialog.getWindow().setBackgroundDrawable(
+                new ColorDrawable(Color.DKGRAY));
+        inputDialog.setTitle("Change Master Password");
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(inputDialog.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+
+
+        final EditText oldPassInput = (EditText) inputDialog.findViewById(R.id.oldPass);
+        final boolean usingDefaultPassword = NoteManager.usingDefaultPassword(ActivityMain.this);
+        if (usingDefaultPassword) {
+            // Hide the 'old password' input since there is no old password set by the user
+            oldPassInput.setVisibility(View.GONE);
+        }
+
+        final EditText newPassInput = (EditText) inputDialog.findViewById(R.id.newPass);
+        final EditText confirmNewPassInput = (EditText) inputDialog.findViewById(R.id.confirmNewPass);
+        inputDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                InputMethodManager imm = (InputMethodManager)
+                        ActivityMain.this.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(oldPassInput, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (usingDefaultPassword) {
+                    if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString()))  {
+                        ActivityMain.this.deleteFile("default"); // Delete the default password file
+                        NoteManager.setNewPassword(null, newPassInput.getText().toString());
+                        inputDialog.dismiss();
+                        Toast.makeText(ActivityMain.this, "Password Changed", Toast.LENGTH_LONG).show();
+                    } else {
+                        // Check that the new password strings do not match
+                        oldPassInput.setText("");
+                        newPassInput.setText("");
+                        Toast.makeText(ActivityMain.this, "Password Do Not Match", Toast.LENGTH_LONG).show();
+                    }
+                } else if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
+                    // Changing master password without a default
+                    inputDialog.dismiss();
+                    if (NoteManager.setNewPassword(oldPassInput.getText().toString(), newPassInput.getText().toString()) == null)
+                        Toast.makeText(ActivityMain.this, "Password Changed", Toast.LENGTH_LONG).show();
+                } else {
+                    oldPassInput.setText("");
+                    Toast.makeText(ActivityMain.this, "Old Password Incorrect", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        inputDialog.show();
     }
 
     // In the note preview dialog confirm the deletion action
