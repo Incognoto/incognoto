@@ -1,0 +1,7 @@
+# basic options
+title: incognoto
+description: Secure notes application
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-midnight
