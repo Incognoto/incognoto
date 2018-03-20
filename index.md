@@ -1,3 +1,7 @@
+---
+title: incognoto
+---
+
 # SUM
 <img src="https://github.com/Collinux/sum-calendaring/blob/master/images/sum-logo.png?raw=true" width="200">
 
@@ -20,12 +24,6 @@ Store encrypted backups on any cloud while keeping your data locked behind a mas
     Blocks screenshots and hide content when you switch between apps.
 ### Quick Search
     Use #Hashtags, words, or phrases to find a note.
-### Further Information Available
-    Check out our website.
-### Proof of concept for website
-[Github code](https://github.com/Maburke/test-website)
-
-[test-site](https://maburke.github.io/test-website/)
 
 
 ## Meet the Team

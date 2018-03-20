@@ -28,13 +28,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * File management for encrypted notes
@@ -44,9 +38,14 @@ public class NoteManager {
     private static ArrayAdapter<Note> adapter;
     private static ArrayAdapter<Note> filteredAdapter;
     private static Context context;
-    private static String password;
     private static LinearLayout tagLayout;
     private static ListView listView;
+
+    // Status is non-null if decryption is successful.
+    // Despite this being a public variable, it does not grant access to the data
+    // since the passphrase is still required for decryption.
+    public static String status;
+    private static String password;
 
     // Separates note objects in document form
     private static final String delimiter = "\n---\n";
@@ -54,7 +53,14 @@ public class NoteManager {
     // Initializes list view's adapter, loads decrypted notes if the given password is valid
     public NoteManager(final ListView listView, final Context context, final String password, final LinearLayout tagLayout) {
         this.context = context;
+
+        // If the master password was not changed from the original generated one then use it
         this.password = password;
+        if (usingDefaultPassword(context)) {
+            this.password = getDefaultPassword(context);
+            this.status = "Active";
+        }
+
         this.adapter = new ArrayAdapter<Note>(context, R.layout.note_item);
         this.filteredAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
         this.tagLayout = tagLayout;
@@ -72,12 +78,27 @@ public class NoteManager {
             }
         });
 
-        // TODO: tell user there are no notes or failure to decrypt
         List<Note> notes = NoteManager.decrypt();
         if (notes != null) {
+            this.status = "Active";
             adapter.addAll(notes);
             showTagUI();
         }
+    }
+
+    private static String getFileContent(final FileInputStream fileInputStream) {
+        BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
+        String line;
+        String allContent = "";
+        try {
+            while ((line = br.readLine()) != null) {
+                allContent += line;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
+        return allContent;
     }
 
     public static void backup() {
@@ -98,6 +119,45 @@ public class NoteManager {
 
     public static void restore() {
         // TODO: import an encrypted backup from another application (via share intent with file)
+    }
+
+    // On first startup the user is given a randomly generated master password.
+    // This is to enable users to use the app without having to set or remember a master password.
+    // It's recommended that the generated master password is changed using the
+    // "Change Master Password" option in the menu.
+    public static String newDefaultKey(Context context) {
+        try {
+            String keyPhrase = AesCbcWithIntegrity.generateKey().getIntegrityKey().toString();
+            FileOutputStream cipherStream = context.openFileOutput("default", Context.MODE_PRIVATE);
+            cipherStream.write(keyPhrase.getBytes());
+            cipherStream.close();
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+            return null;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+    // Detects if the user has set a new master password.
+    public static boolean usingDefaultPassword(final Context context) {
+        if (getDefaultPassword(context) != null)
+            return true;
+        return false;
+    }
+
+    private static String getDefaultPassword(final Context context) {
+        try {
+            return getFileContent(context.openFileInput("default"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // Starts an asynchronous call to save all notes in an encrypted state
@@ -132,7 +192,7 @@ public class NoteManager {
             final Note note = adapter.getItem(i);
 
             // For each tag in a note add a button to the main activity's tag section.
-            // TODO: avoid duplicates
+            // TODO: avoid duplicates. Currently if you have two tags with "#something" then it will create two buttons for "#something" which is redundant
             for (final String tag : note.getTags()) {
                 ActivityMain.tagLayout.addView(createTagButton(tag));
             }
@@ -258,6 +318,19 @@ public class NoteManager {
         return AesCbcWithIntegrity.generateSalt();
     }
 
+    public static String setNewPassword(String oldPassword, final String newPassword) {
+        if (oldPassword == null || oldPassword.equals(newPassword)) {
+            // using default password
+            password = newPassword;
+            saveChanges(adapter);
+            return "Success";
+        } else {
+            return null;
+        }
+    }
+
+    // Decrypt the private internal notes, given a valid password in the NoteManager constructor.
+    // If the key pharse does not decrypt the content or there's any error then return a null list of Notes.
     public static List<Note> decrypt() {
         try {
             // Read the cipher text
@@ -270,7 +343,7 @@ public class NoteManager {
             }
 
 
-            if(allContent.length() != 0) {
+            if (allContent.length() > 0) {
                 // Decrypt the cipher text and add plain text note content to the main activity
                 AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
                 AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
@@ -288,14 +361,21 @@ public class NoteManager {
                     notes.add(target);
                 }
                 return notes;
+            } else if (allContent.length() == 0) {
+                // Valid password but there's no encrypted contents
+                // TODO: bug - if you have no saved notes then it will accept any password.
+                return new ArrayList<Note>();
             }
+            return null;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return null;
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
+            return null;
         }
-        return new ArrayList<Note>();
     }
 }
