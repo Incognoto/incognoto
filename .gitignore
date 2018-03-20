@@ -1,3 +1,6 @@
+# Random extra stuff
+*.DS_STORE
+
 # Built application files
 *.apk
 *.ap_

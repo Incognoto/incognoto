@@ -6,6 +6,8 @@ package com.notes.sum.sec;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -100,7 +102,19 @@ public class NoteManager {
     }
 
     public static void backup() {
-        // TODO: export a copy of the encrypted notes to another application (share intent with file)
+        try{
+            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+            File file = new File(String.valueOf(outputStream));
+
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
+            sendIntent.setType("file");
+            context.startActivity(sendIntent);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void restore() {
@@ -327,6 +341,7 @@ public class NoteManager {
             while ((line = br.readLine()) != null) {
                 allContent += line;
             }
+
 
             if (allContent.length() > 0) {
                 // Decrypt the cipher text and add plain text note content to the main activity
