@@ -6,6 +6,7 @@ package com.notes.sum.sec;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -80,7 +81,19 @@ public class NoteManager {
     }
 
     public static void backup() {
-        // TODO: export a copy of the encrypted notes to another application (share intent with file)
+        try{
+            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+            File file = new File(String.valueOf(outputStream));
+
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
+            sendIntent.setType("file");
+            context.startActivity(sendIntent);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void restore() {
@@ -256,23 +269,26 @@ public class NoteManager {
                 allContent += line;
             }
 
-            // Decrypt the cipher text and add plain text note content to the main activity
-            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
-            AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
-                    new AesCbcWithIntegrity.CipherTextIvMac(allContent);
-            allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
 
-            List<Note> notes = new ArrayList<Note>();
-            while(allContent.contains(delimiter)) {
-                // Slice up each note by its delimiter
-                int index = allContent.indexOf(delimiter); // Starting point of delimiter
-                String content = allContent.substring(0, index);
-                allContent = allContent.substring(index + delimiter.length());
+            if(allContent.length() != 0) {
+                // Decrypt the cipher text and add plain text note content to the main activity
+                AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
+                AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
+                        new AesCbcWithIntegrity.CipherTextIvMac(allContent);
+                allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
 
-                Note target = new Note(content);
-                notes.add(target);
+                List<Note> notes = new ArrayList<Note>();
+                while (allContent.contains(delimiter)) {
+                    // Slice up each note by its delimiter
+                    int index = allContent.indexOf(delimiter); // Starting point of delimiter
+                    String content = allContent.substring(0, index);
+                    allContent = allContent.substring(index + delimiter.length());
+
+                    Note target = new Note(content);
+                    notes.add(target);
+                }
+                return notes;
             }
-            return notes;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
