@@ -105,12 +105,15 @@ public class NoteManager {
     public static void backup() {
         try{
             FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+
+            Log.d("Value of OutputStream", String.valueOf(outputStream));
+
             File file = new File(String.valueOf(outputStream));
 
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
             sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
-            sendIntent.setType(".txt");
+            sendIntent.setType("text/plain");
             context.startActivity(sendIntent);
 
         } catch (FileNotFoundException e) {
