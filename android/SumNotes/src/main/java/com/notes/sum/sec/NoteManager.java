@@ -5,6 +5,7 @@
 package com.notes.sum.sec;
 
 import android.app.ActionBar;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -109,10 +110,12 @@ public class NoteManager {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
             sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
-            sendIntent.setType("file");
+            sendIntent.setType(".txt");
             context.startActivity(sendIntent);
 
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (ActivityNotFoundException e) {
             e.printStackTrace();
         }
     }
