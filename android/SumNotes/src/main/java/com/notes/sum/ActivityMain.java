@@ -66,9 +66,40 @@ public class ActivityMain extends Activity {
         }
         if (NoteManager.usingDefaultPassword(ActivityMain.this)) {
             loadNotes(null);
+            if (sharedPrefs.getBoolean("firstRun", true)){
+                NoteManager.addNote(new Note("Security features \n\n" +
+                        "AES 256 encryption \n\n" +
+                        "Open source \n\n" +
+                        "No screen sharing or screenshots \n\n" +
+                        "Get more info on the security features by visiting our security page on the website: \n" +
+                        //temporary until website is published
+                        "https://github.com/Collinux/sum-calendaring/blob/master/Security.md \n" +
+                        "#security"));
+                NoteManager.addNote(new Note("Privacy overview \n\n" +
+                        "We do not sell, store, or share your information \n\n" +
+                        "No third party software or trackers \n\n" +
+                        "Data is encrypted and secure \n\n" +
+                        "Check our our detailed privacy policy at our privacy page on our website:\n" +
+                        //temp until website is published
+                        "https://github.com/Collinux/sum-calendaring/blob/master/Privacy.md \n" +
+                        "#privacy"));
+                NoteManager.addNote(new Note("Some features: \n\n" +
+                        "-Add notes using the plus up top \n\n" +
+                        "-Search using #hastags, words, or phrases \n\n" +
+                        "-Delete all option for purging notes \n\n" +
+                        "-Change password in the settings \n\n" +
+                        "For more info on features, visit our website at: \n" +
+                        "https://github.com/Collinux/sum-calendaring/blob/master/index.md \n\n" +
+                        "#features"));
+                NoteManager.addNote(new Note("Welcome to Incogoto! Hide your notes here!" +
+                        " Feel free to keep or delete these default notes."));
+                sharedPrefs.edit().putBoolean("firstRun", false).commit();
+            }
+
         } else {
             displayPasswordDialog("Notes Are Locked");
         }
+
     }
 
     // Prompt user for password input and attempt to decrypt content
