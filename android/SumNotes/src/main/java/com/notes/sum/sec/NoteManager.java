@@ -6,8 +6,6 @@ package com.notes.sum.sec;
 
 import android.app.ActionBar;
 import android.content.Context;
-import android.content.Intent;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -46,6 +44,8 @@ public class NoteManager {
     // since the passphrase is still required for decryption.
     public static String status;
     private static String password;
+
+    // TODO: saved preference for authentication method (NFC, default, or password)
 
     // Separates note objects in document form
     private static final String delimiter = "\n---\n";
@@ -101,23 +101,12 @@ public class NoteManager {
         return allContent;
     }
 
-    public static void backup() {
-        try{
-            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
-            File file = new File(String.valueOf(outputStream));
-
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
-            sendIntent.setType("file");
-            context.startActivity(sendIntent);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void restore() {
+        // First delete all notes
+        ActivityMain.showDeleteConfirmation(
+                true, context, "Delete All Notes?",
+                "This action cannot be undone.", null);
+        // TODO: Ask if they want to import a new data set
         // TODO: import an encrypted backup from another application (via share intent with file)
     }
 
@@ -265,6 +254,7 @@ public class NoteManager {
         saveChanges(adapter);
     }
 
+
     /**
      * Reading and Writing encrypted Note objects
      */
@@ -342,7 +332,6 @@ public class NoteManager {
                 allContent += line;
             }
 
-
             if (allContent.length() > 0) {
                 // Decrypt the cipher text and add plain text note content to the main activity
                 AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
@@ -377,5 +366,9 @@ public class NoteManager {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static void backup() {
+        // TODO
     }
 }

@@ -8,6 +8,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,9 +16,12 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.nfc.NdefMessage;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.StrictMode;
+import android.os.Parcelable;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -29,11 +33,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.notes.sum.sec.NFCKey;
 import com.notes.sum.sec.Note;
 import com.notes.sum.sec.NoteManager;
+import com.notes.sum.sec.SearchManager;
+
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * App starts from here using the ActivityMain.xml layout file.
@@ -41,6 +52,10 @@ import com.notes.sum.sec.NoteManager;
 public class ActivityMain extends Activity {
 
     public static LinearLayout tagLayout;
+    NfcAdapter nfcAdapter;
+    PendingIntent pendingIntent;
+    Dialog passwordDialog;
+    String authenticated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,43 +73,117 @@ public class ActivityMain extends Activity {
         setContentView(R.layout.activity_main);
         tagLayout = (LinearLayout) findViewById(R.id.tags);
 
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+//        if (getIntent().getAction().equals(NfcAdapter.ACTION_TAG_DISCOVERED)) {
+//            Log.e("NOTES NFC", "tag discovered");
+//        }
+
         SharedPreferences sharedPrefs = getSharedPreferences("temp", MODE_PRIVATE);
         if (sharedPrefs.getBoolean("default", true)) {
-            // This is the first startup and user does not have a generated master password
+            // Run only once: This is the first startup so the user does not have a master password.
             NoteManager.newDefaultKey(ActivityMain.this);
             sharedPrefs.edit().putBoolean("default", false).commit(); // Never generate pass again
         }
+
+        // Run this each time the app opens
         if (NoteManager.usingDefaultPassword(ActivityMain.this)) {
+            // A generated password is being used, just unlock it
             loadNotes(null);
+            authenticated = "";
         } else {
+            // A user defined password is set, prompt for input
             displayPasswordDialog("Notes Are Locked");
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        nfcAdapter.disableForegroundDispatch(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        // When the app is open and in the foreground then accept NFC input as the decryption key
+        final Pattern OTP_PATTERN = Pattern.compile("^https://my\\.yubico\\.com/neo/([a-zA-Z0-9!]+)$");
+        Matcher matcher = OTP_PATTERN.matcher(intent.getDataString());
+        if (matcher.matches()) {
+            // Found yubikey NEO pattern
+            handleHardwareKey(matcher.group(1));
+        } else {
+            // Parse the key from the from the hardware device parcelable if it's not in the NEO format
+            Parcelable[] raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            byte[] bytes = ((NdefMessage) raw[0]).toByteArray();
+            bytes = Arrays.copyOfRange(bytes, 23, bytes.length);
+            handleHardwareKey(new NFCKey().fromScanCodes(bytes));
+        }
+    }
+
+    /*
+    * Called when an NFC device is used when the app is in the foreground.
+    */
+    public void handleHardwareKey(final String data) {
+        if (authenticated == null) {
+            // The user has set an NFC password already, accept the input and attempt to decrypt
+            passwordDialog.dismiss();
+            loadNotes(data);
+        } else {
+            // The user has not set a password, ask to use the NFC tag as the password
+            AlertDialog.Builder builder1 = new AlertDialog.Builder(ActivityMain.this);
+            builder1.setTitle("Hardware Key");
+            builder1.setMessage("Do you want to use this as your new password?");
+            builder1.setCancelable(true);
+            builder1.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    NoteManager.setNewPassword(null, data);
+                    ActivityMain.this.deleteFile("default"); // Delete the default password file
+                    Toast.makeText(ActivityMain.this, "Success", Toast.LENGTH_SHORT).show();
+                }
+            });
+            builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    dialog.cancel();
+                }
+            });
+            AlertDialog alert = builder1.create();
+            alert.show();
         }
     }
 
     // Prompt user for password input and attempt to decrypt content
     public void displayPasswordDialog(String title) {
-        final Dialog inputDialog = new Dialog(ActivityMain.this);
-        inputDialog.setCancelable(false);
-        inputDialog.setContentView(R.layout.dialog_input);
-        inputDialog.setCanceledOnTouchOutside(false);
-        inputDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(android.graphics.Color.TRANSPARENT));
-        inputDialog.setTitle(title);
+        passwordDialog = new Dialog(ActivityMain.this);
+        passwordDialog.setCancelable(false);
+        passwordDialog.setContentView(R.layout.dialog_input);
+        passwordDialog.setCanceledOnTouchOutside(false);
+        passwordDialog.getWindow().setBackgroundDrawable(
+                new ColorDrawable(Color.TRANSPARENT));
+        passwordDialog.setTitle(title);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(inputDialog.getWindow().getAttributes());
+        lp.copyFrom(passwordDialog.getWindow().getAttributes());
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
-        final EditText input = (EditText) inputDialog.findViewById(R.id.input);
+        final EditText input = (EditText) passwordDialog.findViewById(R.id.input);
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 loadNotes(input.getText().toString());
-                inputDialog.dismiss();
+                passwordDialog.dismiss();
                 return false;
             }
         });
-        inputDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+        passwordDialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialog) {
                 InputMethodManager imm = (InputMethodManager)
@@ -103,17 +192,18 @@ public class ActivityMain extends Activity {
             }
         });
 
-        inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
+        passwordDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadNotes(input.getText().toString());
-                inputDialog.dismiss();
+                passwordDialog.dismiss();
             }
         });
 
-        inputDialog.show();
+        passwordDialog.show();
     }
 
+    // Makes an attempt to decrypt the notes and detect if it's valid
     public void loadNotes(String password) {
         NoteManager nm = new NoteManager(
                 (ListView) findViewById(R.id.listview), ActivityMain.this, password,
@@ -122,6 +212,7 @@ public class ActivityMain extends Activity {
             displayPasswordDialog("Invalid Password");
             return;
         }
+        authenticated = "";
 
         // If you highlight text from another app you can select "share" then select this app.
         // Accepts string input from elsewhere, if you do it manually.
@@ -156,14 +247,6 @@ public class ActivityMain extends Activity {
             case R.id.add:
                 noteContentPreview(true, ActivityMain.this, null);
                 break;
-            case R.id.search:
-                // TODO: show search on action bar
-                break;
-            case R.id.deleteAll:
-                ActivityMain.showDeleteConfirmation(
-                        true, ActivityMain.this, "Delete All Notes?",
-                        "This action cannot be undone.", null);
-                break;
             case R.id.backup:
                 NoteManager.backup();
                 break;
@@ -172,8 +255,6 @@ public class ActivityMain extends Activity {
                 break;
             case R.id.newPassword:
                 showNewMasterPasswordDialog();
-                break;
-            default:
                 break;
         }
         return true;
@@ -285,7 +366,6 @@ public class ActivityMain extends Activity {
         lp.copyFrom(inputDialog.getWindow().getAttributes());
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
 
         final EditText oldPassInput = (EditText) inputDialog.findViewById(R.id.oldPass);
         final boolean usingDefaultPassword = NoteManager.usingDefaultPassword(ActivityMain.this);

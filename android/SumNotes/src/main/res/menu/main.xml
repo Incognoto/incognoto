@@ -8,32 +8,23 @@
     <item
         android:id="@+id/search"
         android:showAsAction="collapseActionView"
-        android:title="Search Notes"/>
-
-    <item
-        android:id="@+id/passwords"
-        android:showAsAction="collapseActionView"
-        android:title="Show Passwords"/>
+        android:actionViewClass="android.widget.SearchView"
+        android:title="Search"/>
 
     <item
         android:id="@+id/restore"
         android:showAsAction="collapseActionView"
-        android:title="Restore Notes"/>
+        android:title="Restore"/>
 
     <item
         android:id="@+id/backup"
         android:showAsAction="collapseActionView"
-        android:title="Backup Notes"/>
-
-    <item
-        android:id="@+id/deleteAll"
-        android:showAsAction="collapseActionView"
-        android:title="Delete All Notes"/>
+        android:title="Backup"/>
 
     <item
         android:id="@+id/newPassword"
         android:showAsAction="collapseActionView"
-        android:title="Change Master Password"/>
+        android:title="Password"/>
 
 </menu>
 

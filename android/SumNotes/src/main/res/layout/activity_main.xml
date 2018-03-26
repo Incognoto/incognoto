@@ -8,8 +8,17 @@
     android:background="#212121"
     android:layout_height="match_parent">
 
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:visibility="gone"
+        android:id="@+id/searchInput"
+        android:gravity="left"/>
+
     <!--Tag buttons are loaded into this view-->
     <HorizontalScrollView
+        android:layout_below="@id/searchInput"
         android:id="@+id/tagLayout"
         android:maxWidth="400dp"
         android:layout_width="match_parent"
