@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2018 Server Under the Mountain (SUM)
+* Copyright (C) 2018 Incognoto
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
  */
 package com.notes.sum;
@@ -18,7 +18,6 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
-import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -33,14 +32,12 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.notes.sum.sec.NFCKey;
 import com.notes.sum.sec.Note;
 import com.notes.sum.sec.NoteManager;
-import com.notes.sum.sec.SearchManager;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -73,12 +70,10 @@ public class ActivityMain extends Activity {
         setContentView(R.layout.activity_main);
         tagLayout = (LinearLayout) findViewById(R.id.tags);
 
+        // Start accepting a hardware based authentication method
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         pendingIntent = PendingIntent.getActivity(
                 this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
-//        if (getIntent().getAction().equals(NfcAdapter.ACTION_TAG_DISCOVERED)) {
-//            Log.e("NOTES NFC", "tag discovered");
-//        }
 
         SharedPreferences sharedPrefs = getSharedPreferences("temp", MODE_PRIVATE);
         if (sharedPrefs.getBoolean("default", true)) {
@@ -92,10 +87,33 @@ public class ActivityMain extends Activity {
             // A generated password is being used, just unlock it
             loadNotes(null);
             authenticated = "";
+            if (sharedPrefs.getBoolean("firstRun", true)) {
+                // Run this only once when a new users installs the app
+                addDefaultNotes();
+                sharedPrefs.edit().putBoolean("firstRun", false).commit();
+            }
         } else {
             // A user defined password is set, prompt for input
             displayPasswordDialog("Notes Are Locked");
         }
+    }
+
+    // The first notes that new users see, telling them about the security, privacy, and features.
+    public void addDefaultNotes() {
+        NoteManager.addNote(new Note("#Security\n" +
+                "- All data is encrypted with AES 256\n" +
+                "- Blocks screenshots and hides notes when minimized\n" +
+                "- Authentication using a custom password, YubiKey NEO, fingerprint, or NFC"
+        ));
+        NoteManager.addNote(new Note("#Privacy\n" +
+                "- Completely open source and non-profit\n" +
+                "- We do not sell, store, or share your information\n" +
+                "- No permissions required, no internet access, no ads, and no trackers" +
+                "- Easily import and export to any cloud without the storage provider being able to read your data"
+        ));
+        NoteManager.addNote(new Note(
+               "Welcome to Incognoto, your secure incognito notes."
+        ));
     }
 
     @Override
@@ -147,7 +165,8 @@ public class ActivityMain extends Activity {
                 public void onClick(DialogInterface dialog, int id) {
                     NoteManager.setNewPassword(null, data);
                     ActivityMain.this.deleteFile("default"); // Delete the default password file
-                    Toast.makeText(ActivityMain.this, "Success", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ActivityMain.this, "Success. Re-open and authenticate.", Toast.LENGTH_SHORT).show();
+                    finish();
                 }
             });
             builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -178,8 +197,8 @@ public class ActivityMain extends Activity {
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                loadNotes(input.getText().toString());
                 passwordDialog.dismiss();
+                loadNotes(input.getText().toString());
                 return false;
             }
         });
@@ -195,8 +214,8 @@ public class ActivityMain extends Activity {
         passwordDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadNotes(input.getText().toString());
                 passwordDialog.dismiss();
+                loadNotes(input.getText().toString());
             }
         });
 

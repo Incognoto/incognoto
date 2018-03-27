@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2018 Server Under the Mountain (SUM)
+* Copyright (C) 2018 Incognoto
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
 package com.notes.sum.sec;

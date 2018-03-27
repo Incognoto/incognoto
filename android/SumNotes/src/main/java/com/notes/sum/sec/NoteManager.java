@@ -1,11 +1,14 @@
 /*
-* Copyright (C) 2018 Server Under the Mountain (SUM)
+* Copyright (C) 2018 Incognoto
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
 package com.notes.sum.sec;
 
 import android.app.ActionBar;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -44,8 +47,6 @@ public class NoteManager {
     // since the passphrase is still required for decryption.
     public static String status;
     private static String password;
-
-    // TODO: saved preference for authentication method (NFC, default, or password)
 
     // Separates note objects in document form
     private static final String delimiter = "\n---\n";
@@ -86,6 +87,7 @@ public class NoteManager {
         }
     }
 
+    // Given a file stream return the file contents
     private static String getFileContent(final FileInputStream fileInputStream) {
         BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
         String line;
@@ -101,13 +103,36 @@ public class NoteManager {
         return allContent;
     }
 
+    // Copy the encrypted notes file to a specified location
+    public static void backup() {
+        try{
+            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+
+            Log.d("Value of OutputStream", String.valueOf(outputStream));
+
+            File file = new File(String.valueOf(outputStream));
+
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
+            sendIntent.setType("text/plain");
+            context.startActivity(sendIntent);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (ActivityNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Copy a text file (encrypted or plaintext) from an external location into this app
     public static void restore() {
         // First delete all notes
         ActivityMain.showDeleteConfirmation(
                 true, context, "Delete All Notes?",
                 "This action cannot be undone.", null);
-        // TODO: Ask if they want to import a new data set
-        // TODO: import an encrypted backup from another application (via share intent with file)
+
+        // TODO: Show prompt for import of data set. After selecting the file then prompt for the passphrase
     }
 
     // On first startup the user is given a randomly generated master password.
@@ -173,8 +198,10 @@ public class NoteManager {
         showTagUI();
     }
 
+    // Reads all tags from all notes and creates buttons at the top of the main page.
+    // Tapping on a tag button shows all notes with that same tag.
     private static void showTagUI() {
-        tagLayout.removeAllViews(); // Start with a fresh view. This operation is low overhead.
+        tagLayout.removeAllViews(); // Always start with a fresh view. This operation is low overhead.
 
         // Go through all items in the list view
         for (int i = 0; i < adapter.getCount(); i++) {
@@ -308,6 +335,8 @@ public class NoteManager {
         return AesCbcWithIntegrity.generateSalt();
     }
 
+    // Given the old password and the new password, check for validity
+    // and re-encrypt all notes with the new password
     public static String setNewPassword(String oldPassword, final String newPassword) {
         if (oldPassword == null || oldPassword.equals(newPassword)) {
             // using default password
@@ -320,7 +349,7 @@ public class NoteManager {
     }
 
     // Decrypt the private internal notes, given a valid password in the NoteManager constructor.
-    // If the key pharse does not decrypt the content or there's any error then return a null list of Notes.
+    // If the key phrase does not decrypt the content or there's any error then return a null list of Notes.
     public static List<Note> decrypt() {
         try {
             // Read the cipher text
@@ -332,43 +361,40 @@ public class NoteManager {
                 allContent += line;
             }
 
-            if (allContent.length() > 0) {
-                // Decrypt the cipher text and add plain text note content to the main activity
-                AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
-                AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
-                        new AesCbcWithIntegrity.CipherTextIvMac(allContent);
-                allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
-
-                List<Note> notes = new ArrayList<Note>();
-                while (allContent.contains(delimiter)) {
-                    // Slice up each note by its delimiter
-                    int index = allContent.indexOf(delimiter); // Starting point of delimiter
-                    String content = allContent.substring(0, index);
-                    allContent = allContent.substring(index + delimiter.length());
-
-                    Note target = new Note(content);
-                    notes.add(target);
-                }
-                return notes;
-            } else if (allContent.length() == 0) {
-                // Valid password but there's no encrypted contents
-                // TODO: bug - if you have no saved notes then it will accept any password.
-                return new ArrayList<Note>();
+            // Decrypt the cipher text and add plain text note content to the main activity
+            AesCbcWithIntegrity.SecretKeys key = null;
+            try {
+                key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+                return null;
             }
-            return null;
+            AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
+                    new AesCbcWithIntegrity.CipherTextIvMac(allContent);
+            try {
+                allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            List<Note> notes = new ArrayList<Note>();
+            while (allContent.contains(delimiter)) {
+                // Slice up each note by its delimiter
+                int index = allContent.indexOf(delimiter); // Starting point of delimiter
+                String content = allContent.substring(0, index);
+                allContent = allContent.substring(index + delimiter.length());
+
+                Note target = new Note(content);
+                notes.add(target);
+            }
+            return notes;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return null;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-            return null;
         }
-    }
-
-    public static void backup() {
-        // TODO
     }
 }

@@ -7,7 +7,7 @@
     android:layout_height="wrap_content"
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="16dp"
-    android:maxLines="5"
+    android:maxLines="7"
     android:textColor="@android:color/white"
     android:gravity="center|left"
     android:layout_marginBottom="4dp"

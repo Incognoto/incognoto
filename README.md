@@ -1,5 +1,5 @@
 # SUM
-<img src="https://github.com/Collinux/sum-calendaring/blob/master/images/sum-logo.png?raw=true" width="200">
+<img src="https://github.com/Collinux/sum-calendaring/blob/master/images/incognoto.png?raw=true" width="200">
 
 ### Server Under the Mountain (SUM) Group
 Open source solution for secure notes and passwords.
