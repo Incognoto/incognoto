@@ -8,6 +8,8 @@
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="16dp"
     android:maxLines="7"
+    android:scrollHorizontally="true"
+    android:ellipsize="end"
     android:textColor="@android:color/white"
     android:gravity="center|left"
     android:layout_marginBottom="4dp"
