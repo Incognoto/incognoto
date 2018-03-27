@@ -5,9 +5,12 @@
 package com.notes.sum.sec;
 
 import android.app.ActionBar;
+import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -15,6 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.notes.sum.ActivityMain;
 import com.notes.sum.R;
@@ -26,10 +30,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static android.content.Context.DOWNLOAD_SERVICE;
 
 /**
  * File management for encrypted notes
@@ -103,24 +111,19 @@ public class NoteManager {
         return allContent;
     }
 
-    // Copy the encrypted notes file to a specified location
+    // Copy the encrypted notes file to the "Downloads" folder
     public static void backup() {
-        try{
-            FileOutputStream outputStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
-
-            Log.d("Value of OutputStream", String.valueOf(outputStream));
-
-            File file = new File(String.valueOf(outputStream));
-
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_FROM_STORAGE, file);
-            sendIntent.setType("text/plain");
-            context.startActivity(sendIntent);
-
+        try {
+            File file = new File(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS).getPath(), "notes.txt");
+            FileOutputStream output = new FileOutputStream(file);
+            output.write((getFileContent(context.openFileInput("notes")) + "\n").getBytes());
+            output.close();
+            Toast.makeText(context, "Saved encrypted notes to 'Downloads' folder.",
+                    Toast.LENGTH_LONG).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-        } catch (ActivityNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
