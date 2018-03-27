@@ -2,11 +2,11 @@
 <img src="https://github.com/Collinux/incognoto/blob/master/images/incognoto.png?raw=true" width="200">
 Take control of your personal data with Incognoto, your secure incognito notes.
 
-#### Take Control Of Your Personal Data
+#### Security and Privacy Made Simple
 Your encrypted data never leaves your device without your permission. There are no trackers, no ads, and no device permissions required. We do not sell, store or share your information since Incognoto is entirely free and open source.
 There No permissions required, no internet access, no ads, no trackers. 
 
-#### Easy & Secure Backups 
+#### Easy and Secure Backups 
 For when life’s accidents happen, you can rest assured that your data is available only to you. 
 Store encrypted backups on any cloud while keeping your data locked behind a master password.
 
