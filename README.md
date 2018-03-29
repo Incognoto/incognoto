@@ -8,8 +8,7 @@ Take control of your personal data with Incognoto, your secure incognito notes.
 All notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.
 
 #### Easy and Secure Backups 
-For when life’s accidents happen, you can rest assured that your data is available only to you. 
-Store encrypted backups on any cloud while keeping your data locked behind your password.
+For when life’s accidents happen, you can rest assured that your data is available only to you. Store encrypted backups on any cloud while keeping your data locked behind your own password. Incognoto has zero knowledge of your notes so if you lose your password then we are not able to recover any data.
 
 #### Advanced Authentication
 By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the most advanced security standards.
@@ -18,17 +17,17 @@ By default your data is encrypted using a cryptographically secure generated pas
 ### Free & Open Source
    Peer reviewed code. Security nerds approve.
 ### Minimal Footprint
-   There's no bloatware, no ads, no trackers. The app install size is around 400kB and has low memory usage so Incognoto is lightweight and lightning fast on any device.
+   With an app size of around 400kB and low memory usage, Incognoto is lightweight and lightning fast on any device.
 ### Incognito Mode
    Blocks screenshots and hide content when you switch between apps.
 ### Quick Search & Filters
-   Use #Hashtags, words, or phrases to find a note.
+   Use #Hashtags, words, or phrases to find notes.
 
 ## Meet the Team
-This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Senior Capstone](https://www.uncg.edu/cmp/) project, Spring 2018.
+This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Undergraduate Capstone](https://www.uncg.edu/cmp/) project.
 
 <a href="https://github.com/collinux">@collinux</a>: Software Architecture & Design</br>
-<a href="https://github.com/hahnalex">@hahnalex</a>: Platform Developer</br>
+<a href="https://github.com/hahnalex">@hahnalex</a>: Android Developer</br>
 <a href="https://github.com/jxDenney">@jxDenney</a>: Security Architect</br>
-<a href="https://github.com/leroosje">@leroosje</a>: Project Manager & Software Developer</br>
-<a href="https://github.com/maburke">@maburke</a>: Content Manager & Software Developer</br>
+<a href="https://github.com/leroosje">@leroosje</a>: Project Manager & Android Developer</br>
+<a href="https://github.com/maburke">@maburke</a>: Content Manager & Android Developer</br>
