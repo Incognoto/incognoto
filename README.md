@@ -5,21 +5,20 @@ Take control of your personal data with Incognoto, your secure incognito notes.
 <a href=""><img src="https://github.com/Collinux/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 
 #### Security and Privacy Made Simple
-Your encrypted data never leaves your device without your permission. There are no trackers, no ads, and no device permissions required. We do not sell, store or share your information since Incognoto is entirely free and open source.
-There No permissions required, no internet access, no ads, no trackers. 
+All notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.
 
 #### Easy and Secure Backups 
 For when life’s accidents happen, you can rest assured that your data is available only to you. 
-Store encrypted backups on any cloud while keeping your data locked behind a master password.
+Store encrypted backups on any cloud while keeping your data locked behind your password.
 
 #### Advanced Authentication
-By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the more advanced security standards.
+By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the most advanced security standards.
 
 # Features
 ### Free & Open Source
    Peer reviewed code. Security nerds approve.
 ### Minimal Footprint
-   There's no bloatware, no ads, no trackers. At only 400kB for the app install and low memory usage, Incognoto is lightweight and lightning fast on any device.
+   There's no bloatware, no ads, no trackers. The app install size is around 400kB and has low memory usage so Incognoto is lightweight and lightning fast on any device.
 ### Incognito Mode
    Blocks screenshots and hide content when you switch between apps.
 ### Quick Search & Filters

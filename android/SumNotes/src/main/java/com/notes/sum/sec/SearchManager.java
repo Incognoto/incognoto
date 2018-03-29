@@ -14,27 +14,25 @@ public class SearchManager {
     // Takes array of notes and parses for string
     // String is the search string to be parsed
 
-    private ArrayList<String> noteList = new ArrayList();
-    private ArrayList<String> foundNoteList = new ArrayList();
+    private ArrayList<Note> noteList = new ArrayList();
+    private ArrayList<Note> foundNoteList = new ArrayList();
     private String searchString;
     private ArrayList<String> searchWords = new ArrayList();
     private ArrayList<Integer> searchOperands = new ArrayList();
     //USE FIRST DUMMY VALUE OF -1, HAVE 0 REP AND, 1 REP OR, 2 REP NOT
 
-    public void setNoteList(ArrayList<String> nl){
+    public void setNoteList(ArrayList<Note> nl){
         this.noteList = nl;
     }
-    public ArrayList<String> getNoteList(){
+    public ArrayList<Note> getNoteList(){
         return this.noteList;
     }
 
-    public void setFoundNoteList(ArrayList<String> fnl){
+    public void setFoundNoteList(ArrayList<Note> fnl){
         this.foundNoteList = fnl;
     }
-    public ArrayList<String> getFoundNoteList(){
-        return this.foundNoteList;
-    }
-    private void addToFoundNotes(String match){
+    public ArrayList<Note> getFoundNoteList(){return this.foundNoteList;}
+    private void addToFoundNotes(Note match){
         this.foundNoteList.add(match);
     }
 
@@ -45,15 +43,13 @@ public class SearchManager {
         return this.searchString;
     }
 
-    public void initializeDumboVals(){
-        for(Integer i = 0; i <= 10; i++){
-            noteList.add(i.toString());
-        }
+    public SearchManager(ArrayList<Note> masterList, String query){
+        setNoteList(masterList);
+        setSearchString(query);
+        search();
     }
 
-    public void search(ArrayList<String> noteList, String searchString){
-        setNoteList(noteList);
-        setSearchString(searchString);
+    public void search(){
         parseforops(searchString);
 
         for(int i = 0; i < searchOperands.size(); i++){
@@ -101,35 +97,47 @@ public class SearchManager {
 
     private void initSearch(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).equals(search)){
+            if(contains(noteList.get(i),search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void andOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(!foundNoteList.get(i).equals(search)){
+            if(!contains(foundNoteList.get(i),search)){
                 foundNoteList.remove(i);
+                i--;
             }
         }
     }
     private void orOperation(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).equals(search)){
+            if(contains(noteList.get(i),search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void notOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(foundNoteList.get(i).equals(search)){
+            if(contains(foundNoteList.get(i),search)){
                 foundNoteList.remove(i);
+                i--;
             }
         }
     }
 
-    private boolean contains(String note, String search){
-        //regular expression
+    private boolean contains(Note note, String search){
+        String noteString = note.getNoteContent();
+        int i = 0;
+        int j = search.length() - 1;
+
+        while(j < noteString.length()){
+            if(noteString.substring(i,j).equals(search)){
+                return true;
+            }
+            i++;
+            j++;
+        }
         return false;
     }
 
