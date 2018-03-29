@@ -5,7 +5,7 @@ Take control of your personal data with Incognoto, your secure incognito notes.
 <a href=""><img src="https://github.com/Collinux/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 
 #### Security and Privacy Made Simple
-All notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source. There are no intrustive permissions required, no internet access, no ads, no trackers.
+All notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.
 
 #### Easy and Secure Backups 
 For when life’s accidents happen, you can rest assured that your data is available only to you. 
