@@ -1,7 +1,7 @@
 # Incognoto
 <p align="center">
 <img src="https://github.com/Collinux/incognoto/blob/master/images/incognoto.png?raw=true" width="230"><br>
-<b>Take control of your personal data with Incognoto, your secure incognito notes.<b><br><br>
+<b>Take control of your personal data with Incognoto, your secure incognito notes.</b><br><br>
 <a href=""><img src="https://github.com/Collinux/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 </p>
 
