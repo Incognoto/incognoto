@@ -1,6 +1,6 @@
 # basic options
-title: incognoto
-description: Secure notes application
+title: Incognoto
+description: Take control of your personal data with Incognoto, your secure incognito notes. 
 
 # Build settings
 markdown: kramdown
