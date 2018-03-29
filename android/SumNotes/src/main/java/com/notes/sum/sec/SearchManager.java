@@ -97,35 +97,47 @@ public class SearchManager {
 
     private void initSearch(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().equals(search)){
+            if(contains(noteList.get(i),search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void andOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(!foundNoteList.get(i).getNoteContent().equals(search)){
+            if(!contains(foundNoteList.get(i),search)){
                 foundNoteList.remove(i);
+                i--;
             }
         }
     }
     private void orOperation(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().equals(search)){
+            if(contains(noteList.get(i),search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void notOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(foundNoteList.get(i).getNoteContent().equals(search)){
+            if(contains(foundNoteList.get(i),search)){
                 foundNoteList.remove(i);
+                i--;
             }
         }
     }
 
-    private boolean contains(String note, String search){
-        //regular expression
+    private boolean contains(Note note, String search){
+        String noteString = note.getNoteContent();
+        int i = 0;
+        int j = search.length() - 1;
+
+        while(j < noteString.length()){
+            if(noteString.substring(i,j).equals(search)){
+                return true;
+            }
+            i++;
+            j++;
+        }
         return false;
     }
 
