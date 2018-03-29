@@ -14,7 +14,7 @@
         android:maxWidth="400dp"
         android:layout_width="match_parent"
         android:paddingTop="8dp"
-        android:paddingLeft="8dp"
+        android:layout_marginLeft="8dp"
         android:scrollbars="none"
         android:layout_height="wrap_content">
 

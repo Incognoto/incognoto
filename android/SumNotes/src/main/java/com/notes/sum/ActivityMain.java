@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.PendingIntent;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,11 +17,13 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -32,6 +35,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +43,10 @@ import com.notes.sum.sec.NFCKey;
 import com.notes.sum.sec.Note;
 import com.notes.sum.sec.NoteManager;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -100,20 +108,9 @@ public class ActivityMain extends Activity {
 
     // The first notes that new users see, telling them about the security, privacy, and features.
     public void addDefaultNotes() {
-        NoteManager.addNote(new Note("#Security\n" +
-                "- All data is encrypted with AES 256\n" +
-                "- Blocks screenshots and hides notes when minimized\n" +
-                "- Authentication using a custom password, YubiKey NEO, fingerprint, or NFC"
-        ));
-        NoteManager.addNote(new Note("#Privacy\n" +
-                "- Completely open source and non-profit\n" +
-                "- We do not sell, store, or share your information\n" +
-                "- No permissions required, no internet access, no ads, and no trackers" +
-                "- Easily import and export to any cloud without the storage provider being able to read your data"
-        ));
-        NoteManager.addNote(new Note(
-               "Welcome to Incognoto, your secure incognito notes."
-        ));
+        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_3)));
+        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_2)));
+        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_1)));
     }
 
     @Override
@@ -165,8 +162,11 @@ public class ActivityMain extends Activity {
                 public void onClick(DialogInterface dialog, int id) {
                     NoteManager.setNewPassword(null, data);
                     ActivityMain.this.deleteFile("default"); // Delete the default password file
-                    Toast.makeText(ActivityMain.this, "Success. Re-open and authenticate.", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast notify = Toast.makeText(
+                            ActivityMain.this, "Success. Test your authentication.", Toast.LENGTH_LONG);
+                    notify.setGravity(Gravity.CENTER, 0, 0);
+                    notify.show();
+                    displayPasswordDialog("Notes Are Locked");
                 }
             });
             builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -233,17 +233,61 @@ public class ActivityMain extends Activity {
         }
         authenticated = "";
 
-        // If you highlight text from another app you can select "share" then select this app.
-        // Accepts string input from elsewhere, if you do it manually.
-        Intent intent = getIntent();
-        if (Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
-            String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-            if (sharedText != null) {
-                NoteManager.addNote(new Note(sharedText));
+        handleIntents(getIntent());
+    }
+
+    // If you highlight text from another app you can select "share" then select this app.
+    // Accepts string input from elsewhere, if you do it manually.
+    private static void handleIntents(Intent intent) {
+        if (intent.getType() != null) {
+            if (intent.getType().toString().equals("application/octet-stream")) {
+                // Accept any encrypted notes file
+                // TODO: prompt for storage permission if not already given
+                Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
+                String path = uri.getLastPathSegment().replace("raw:", "");
+                try {
+                    String content = NoteManager.getFileContent(new FileInputStream(new File(path)));
+                    Log.e("NOTES", content);
+                    // TODO: If the file is encrypted then prompt for a decryption key
+                    // TODO: Delete current contents and encrypt the imported file
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else if (Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
+                // Accept plain text strings
+                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+                if (sharedText != null) {
+                    NoteManager.addNote(new Note(sharedText));
+                }
             }
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.main, menu);
+        SearchManager manager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchView search = (SearchView) menu.findItem(R.id.search).getActionView();
+        search.setSearchableInfo(manager.getSearchableInfo(getComponentName()));
+        search.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                NoteManager.clearSearch(false);
+                NoteManager.search(query);
+                return true;
+            }
+        });
+        return true;
+
+    }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -251,13 +295,6 @@ public class ActivityMain extends Activity {
         super.onBackPressed();
         // Press back to close the app quickly and remove it from the recent tasks list
         finishAndRemoveTask();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
     }
 
     @Override
@@ -270,13 +307,39 @@ public class ActivityMain extends Activity {
                 NoteManager.backup();
                 break;
             case R.id.restore:
-                NoteManager.restore();
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("*/*");
+                Toast.makeText(ActivityMain.this,
+                        "Select an encrypted notes file to import", Toast.LENGTH_SHORT).show();
+                startActivityForResult(intent, 10);
+                // `onActivityResult` is automatically called after this
                 break;
-            case R.id.newPassword:
+            case R.id.security:
                 showNewMasterPasswordDialog();
                 break;
         }
         return true;
+    }
+
+
+    // Called after `restore` when a file has been selected to be imported
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.e("NOTES", "result code: " + String.valueOf(resultCode));
+        if (requestCode == 10) {
+            // Activity has been started with a file to be imported
+            Uri uri = (Uri) data.getExtras().get(Intent.EXTRA_STREAM);
+            String path = uri.getLastPathSegment().replace("raw:", "");
+            String content = null;
+            try {
+                content = NoteManager.getFileContent(new FileInputStream(new File(path)));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            Log.e("NOTES", content);
+            // TODO: If the file is encrypted then prompt for a decryption key
+            // TODO: Delete current contents and encrypt the imported file
+        }
     }
 
     // Used to change note content or make a new note.

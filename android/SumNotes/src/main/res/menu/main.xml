@@ -22,9 +22,9 @@
         android:title="Backup"/>
 
     <item
-        android:id="@+id/newPassword"
+        android:id="@+id/security"
         android:showAsAction="collapseActionView"
-        android:title="Password"/>
+        android:title="Security"/>
 
 </menu>
 

@@ -5,19 +5,20 @@
 package com.notes.sum.sec;
 
 import android.app.ActionBar;
-import android.app.DownloadManager;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.notes.sum.ActivityMain;
@@ -30,14 +31,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static android.content.Context.DOWNLOAD_SERVICE;
 
 /**
  * File management for encrypted notes
@@ -96,7 +93,7 @@ public class NoteManager {
     }
 
     // Given a file stream return the file contents
-    private static String getFileContent(final FileInputStream fileInputStream) {
+    public static String getFileContent(final FileInputStream fileInputStream) {
         BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
         String line;
         String allContent = "";
@@ -108,6 +105,11 @@ public class NoteManager {
             e.printStackTrace();
             return "";
         }
+        try {
+            fileInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return allContent;
     }
 
@@ -115,12 +117,14 @@ public class NoteManager {
     public static void backup() {
         try {
             File file = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS).getPath(), "notes.txt");
+                    Environment.DIRECTORY_DOWNLOADS).getPath(), "notes.encrypted");
             FileOutputStream output = new FileOutputStream(file);
             output.write((getFileContent(context.openFileInput("notes")) + "\n").getBytes());
             output.close();
-            Toast.makeText(context, "Saved encrypted notes to 'Downloads' folder.",
-                    Toast.LENGTH_LONG).show();
+            Toast notify = Toast.makeText(
+                    context, "Saved encrypted notes to 'Downloads' folder.", Toast.LENGTH_LONG);
+            notify.setGravity(Gravity.CENTER, 0, 0);
+            notify.show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -129,7 +133,7 @@ public class NoteManager {
     }
 
     // Copy a text file (encrypted or plaintext) from an external location into this app
-    public static void restore() {
+    public void restore() {
         // First delete all notes
         ActivityMain.showDeleteConfirmation(
                 true, context, "Delete All Notes?",
@@ -137,6 +141,7 @@ public class NoteManager {
 
         // TODO: Show prompt for import of data set. After selecting the file then prompt for the passphrase
     }
+
 
     // On first startup the user is given a randomly generated master password.
     // This is to enable users to use the app without having to set or remember a master password.
@@ -284,20 +289,32 @@ public class NoteManager {
         saveChanges(adapter);
     }
 
+    // Clear the filter adapter to show no results in the search
+    // If swapAdapter is true then make the listview show the full list of notes (default)
+    public static void clearSearch(boolean swapAdapters) {
+        filteredAdapter.clear();
+        if (swapAdapters)
+            listView.setAdapter(adapter);
+    }
+
     // Given a user defined query return all Note objects that contain terms related to the query
-    public static List<Note> search(String query) {
-        List<Note> found = new ArrayList<>();
+    public static void search(String query) {
+//        ArrayAdapter<Note> tempAdapter = adapter;
+//        NoteSearch searchManager = new NoteSearch(adapter, query);
+//        filteredAdapter = searchManager.getFoundNoteList();
+//        List<Note> found = new ArrayList<>();
+
         for (int i = 0; i < adapter.getCount(); i++) {
             Note note = adapter.getItem(i);
             String content = note.getNoteContent();
 
             // TODO: This currently looks for exact string matches. It should split the query into words and search for each one
             if (content.contains(query)) {
-                found.add(note);
+                filteredAdapter.add(note);
             }
         }
         // TODO: The found notes should be ordered by relevance. If a note's content matches the search string perfectly then use found.add(0, note) to add it to the top (index zero)
-        return found;
+        listView.setAdapter(filteredAdapter);
     }
 
 
@@ -388,11 +405,14 @@ public class NoteManager {
                 e.printStackTrace();
                 return null;
             }
-            AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
-                    new AesCbcWithIntegrity.CipherTextIvMac(allContent);
             try {
+                AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac =
+                        new AesCbcWithIntegrity.CipherTextIvMac(allContent);
                 allContent = AesCbcWithIntegrity.decryptString(cipherTextIvMac, key);
             } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+                return null;
+            } catch (IllegalArgumentException e) {
                 e.printStackTrace();
                 return null;
             }
