@@ -57,16 +57,22 @@ import java.util.regex.Pattern;
 public class ActivityMain extends Activity {
 
     public static LinearLayout tagLayout;
+    public static ListView listView;
+    public static Context context;
+
+    // Used to import/export and unlock contents
+    public static NoteManager noteManager;
+    public static Intent intent;
+
+    // Used to accept decryption input
     NfcAdapter nfcAdapter;
     PendingIntent pendingIntent;
-    Dialog passwordDialog;
-    String authenticated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Secure the view: disable screenshots and block other apps from acquiring screen content
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE); // TODO: uncomment on release
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             // Additional screen security options in versions later than JellyBean
             // Hide notes in the "recent" app preview list
@@ -77,51 +83,34 @@ public class ActivityMain extends Activity {
         // Load the view and show a password prompt to decrypt the content.
         setContentView(R.layout.activity_main);
         tagLayout = (LinearLayout) findViewById(R.id.tags);
+        listView = (ListView) findViewById(R.id.listview);
+        context = ActivityMain.this;
+        intent = getIntent(); // Any pending intents are handled after decryption
+        noteManager = new NoteManager(context);
 
         // Start accepting a hardware based authentication method
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         pendingIntent = PendingIntent.getActivity(
                 this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 
-        SharedPreferences sharedPrefs = getSharedPreferences("temp", MODE_PRIVATE);
-        if (sharedPrefs.getBoolean("default", true)) {
-            // Run only once: This is the first startup so the user does not have a master password.
-            NoteManager.newDefaultKey(ActivityMain.this);
-            sharedPrefs.edit().putBoolean("default", false).commit(); // Never generate pass again
+        // Attempt to decrypt the note file. This also handles the startup using a default password.
+        if (noteManager.unlock(null) == null) {
+            // Default password is not being used, show password prompt
+            Dialogs.displayPasswordDialog(noteManager, context, "Notes Are Locked");
         }
-
-        // Run this each time the app opens
-        if (NoteManager.usingDefaultPassword(ActivityMain.this)) {
-            // A generated password is being used, just unlock it
-            loadNotes(null);
-            authenticated = "";
-            if (sharedPrefs.getBoolean("firstRun", true)) {
-                // Run this only once when a new users installs the app
-                addDefaultNotes();
-                sharedPrefs.edit().putBoolean("firstRun", false).commit();
-            }
-        } else {
-            // A user defined password is set, prompt for input
-            displayPasswordDialog("Notes Are Locked");
-        }
-    }
-
-    // The first notes that new users see, telling them about the security, privacy, and features.
-    public void addDefaultNotes() {
-        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_3)));
-        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_2)));
-        NoteManager.addNote(new Note(getResources().getString(R.string.welcome_note_1)));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        // Accept NFC input as password
         nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        // Disable NFC input as password
         nfcAdapter.disableForegroundDispatch(this);
     }
 
@@ -148,97 +137,20 @@ public class ActivityMain extends Activity {
     * Called when an NFC device is used when the app is in the foreground.
     */
     public void handleHardwareKey(final String data) {
-        if (authenticated == null) {
+        if (noteManager.status == null) {
             // The user has set an NFC password already, accept the input and attempt to decrypt
-            passwordDialog.dismiss();
-            loadNotes(data);
+            if (Dialogs.passwordDialog != null)
+                Dialogs.passwordDialog.dismiss();
+            noteManager.unlock(data);
         } else {
             // The user has not set a password, ask to use the NFC tag as the password
-            AlertDialog.Builder builder1 = new AlertDialog.Builder(ActivityMain.this);
-            builder1.setTitle("Hardware Key");
-            builder1.setMessage("Do you want to use this as your new password?");
-            builder1.setCancelable(true);
-            builder1.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    NoteManager.setNewPassword(null, data);
-                    ActivityMain.this.deleteFile("default"); // Delete the default password file
-                    Toast notify = Toast.makeText(
-                            ActivityMain.this, "Success. Test your authentication.", Toast.LENGTH_LONG);
-                    notify.setGravity(Gravity.CENTER, 0, 0);
-                    notify.show();
-                    displayPasswordDialog("Notes Are Locked");
-                }
-            });
-            builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    dialog.cancel();
-                }
-            });
-            AlertDialog alert = builder1.create();
-            alert.show();
+            Dialogs.setNewHardwareKey(noteManager, context, data);
         }
-    }
-
-    // Prompt user for password input and attempt to decrypt content
-    public void displayPasswordDialog(String title) {
-        passwordDialog = new Dialog(ActivityMain.this);
-        passwordDialog.setCancelable(false);
-        passwordDialog.setContentView(R.layout.dialog_input);
-        passwordDialog.setCanceledOnTouchOutside(false);
-        passwordDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(Color.TRANSPARENT));
-        passwordDialog.setTitle(title);
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(passwordDialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
-        final EditText input = (EditText) passwordDialog.findViewById(R.id.input);
-        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                passwordDialog.dismiss();
-                loadNotes(input.getText().toString());
-                return false;
-            }
-        });
-        passwordDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialog) {
-                InputMethodManager imm = (InputMethodManager)
-                        ActivityMain.this.getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
-
-        passwordDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                passwordDialog.dismiss();
-                loadNotes(input.getText().toString());
-            }
-        });
-
-        passwordDialog.show();
-    }
-
-    // Makes an attempt to decrypt the notes and detect if it's valid
-    public void loadNotes(String password) {
-        NoteManager nm = new NoteManager(
-                (ListView) findViewById(R.id.listview), ActivityMain.this, password,
-                (LinearLayout) findViewById(R.id.tags));
-        if (nm.status == null || nm == null) {
-            displayPasswordDialog("Invalid Password");
-            return;
-        }
-        authenticated = "";
-
-        handleIntents(getIntent());
     }
 
     // If you highlight text from another app you can select "share" then select this app.
     // Accepts string input from elsewhere, if you do it manually.
-    private static void handleIntents(Intent intent) {
+    public static void handleIntents() {
         if (intent.getType() != null) {
             if (intent.getType().toString().equals("application/octet-stream")) {
                 // Accept any encrypted notes file
@@ -301,31 +213,31 @@ public class ActivityMain extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.add:
-                noteContentPreview(true, ActivityMain.this, null);
+                noteContentPreview(true, context, null);
                 break;
             case R.id.backup:
                 NoteManager.backup();
+                if (NoteManager.usingDefaultPassword(context))
+                    Dialogs.showExportDialog(context);
                 break;
-            case R.id.restore:
+            case R.id.importDatabase:
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
-                Toast.makeText(ActivityMain.this,
-                        "Select an encrypted notes file to import", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Pick an encrypted notes file to import",
+                        Toast.LENGTH_SHORT).show();
                 startActivityForResult(intent, 10);
-                // `onActivityResult` is automatically called after this
+                // `onActivityResult` is automatically called after an import file has been selected
                 break;
             case R.id.security:
-                showNewMasterPasswordDialog();
+                Dialogs.showNewMasterPasswordDialog(context);
                 break;
         }
         return true;
     }
 
-
     // Called after `restore` when a file has been selected to be imported
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.e("NOTES", "result code: " + String.valueOf(resultCode));
         if (requestCode == 10) {
             // Activity has been started with a file to be imported
             Uri uri = (Uri) data.getExtras().get(Intent.EXTRA_STREAM);
@@ -337,6 +249,7 @@ public class ActivityMain extends Activity {
                 e.printStackTrace();
             }
             Log.e("NOTES", content);
+//            Dialogs.displayImportDialog();
             // TODO: If the file is encrypted then prompt for a decryption key
             // TODO: Delete current contents and encrypt the imported file
         }
@@ -416,7 +329,7 @@ public class ActivityMain extends Activity {
             @Override
             public void onClick(View v) {
                 if (note != null)
-                    showDeleteConfirmation(false, context,
+                    Dialogs.showDeleteConfirmation(false, context,
                             "Delete This Note?", "This action cannot be undone.", note);
                 notePreviewDialog.dismiss();
             }
@@ -432,94 +345,6 @@ public class ActivityMain extends Activity {
                 context.startActivity(Intent.createChooser(sharingIntent, "Send a copy to:"));
             }
         });
-
         notePreviewDialog.show();
-    }
-
-    public void showNewMasterPasswordDialog() {
-        final Dialog inputDialog = new Dialog(ActivityMain.this);
-        //inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        inputDialog.setContentView(R.layout.dialog_password_change);
-        inputDialog.setCanceledOnTouchOutside(false);
-        inputDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(Color.DKGRAY));
-        inputDialog.setTitle("Change Master Password");
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(inputDialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
-        final EditText oldPassInput = (EditText) inputDialog.findViewById(R.id.oldPass);
-        final boolean usingDefaultPassword = NoteManager.usingDefaultPassword(ActivityMain.this);
-        if (usingDefaultPassword) {
-            // Hide the 'old password' input since there is no old password set by the user
-            oldPassInput.setVisibility(View.GONE);
-        }
-
-        final EditText newPassInput = (EditText) inputDialog.findViewById(R.id.newPass);
-        final EditText confirmNewPassInput = (EditText) inputDialog.findViewById(R.id.confirmNewPass);
-        inputDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialog) {
-                InputMethodManager imm = (InputMethodManager)
-                        ActivityMain.this.getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(oldPassInput, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
-
-        inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (usingDefaultPassword) {
-                    if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString()))  {
-                        ActivityMain.this.deleteFile("default"); // Delete the default password file
-                        NoteManager.setNewPassword(null, newPassInput.getText().toString());
-                        inputDialog.dismiss();
-                        Toast.makeText(ActivityMain.this, "Password Changed", Toast.LENGTH_LONG).show();
-                    } else {
-                        // Check that the new password strings do not match
-                        oldPassInput.setText("");
-                        newPassInput.setText("");
-                        Toast.makeText(ActivityMain.this, "Password Do Not Match", Toast.LENGTH_LONG).show();
-                    }
-                } else if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
-                    // Changing master password without a default
-                    inputDialog.dismiss();
-                    if (NoteManager.setNewPassword(oldPassInput.getText().toString(), newPassInput.getText().toString()) == null)
-                        Toast.makeText(ActivityMain.this, "Password Changed", Toast.LENGTH_LONG).show();
-                } else {
-                    oldPassInput.setText("");
-                    Toast.makeText(ActivityMain.this, "Old Password Incorrect", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-
-        inputDialog.show();
-    }
-
-    // In the note preview dialog confirm the deletion action
-    // If "all" is true then clear all notes
-    public static void showDeleteConfirmation(final boolean all, final Context context,
-                                              final String title, final String message,
-                                              final Note note) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
-        builder1.setTitle(title);
-        builder1.setMessage(message);
-        builder1.setCancelable(true);
-        builder1.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                if (all)
-                    NoteManager.clearAll();
-                else
-                    NoteManager.removeNote(note);
-            }
-        });
-        builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.cancel();
-            }
-        });
-        AlertDialog alert = builder1.create();
-        alert.show();
     }
 }

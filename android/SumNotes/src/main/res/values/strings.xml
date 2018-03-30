@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="welcome_note_1">#Privacy\nAll notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.</string>
-    <string name="welcome_note_2">#Security\n By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the most advanced security standards.</string>
+    <string name="welcome_note_2">#Security\nBy default your notes are encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the most advanced security standards.</string>
     <string name="welcome_note_3">#Backups\nFor when life’s accidents happen, you can rest assured that your data is available only to you. Store encrypted backups on any cloud while keeping your data locked behind your password.</string>
 </resources>

@@ -12,9 +12,9 @@
         android:title="Search"/>
 
     <item
-        android:id="@+id/restore"
+        android:id="@+id/importDatabase"
         android:showAsAction="collapseActionView"
-        android:title="Restore"/>
+        android:title="Import"/>
 
     <item
         android:id="@+id/backup"

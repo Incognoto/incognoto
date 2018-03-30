@@ -6,22 +6,16 @@ package com.notes.sum.sec;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Environment;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.SearchView;
-import android.widget.Toast;
 
 import com.notes.sum.ActivityMain;
+import com.notes.sum.Dialogs;
 import com.notes.sum.R;
 
 import java.io.BufferedReader;
@@ -36,6 +30,8 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.content.Context.MODE_PRIVATE;
+
 /**
  * File management for encrypted notes
  */
@@ -44,8 +40,6 @@ public class NoteManager {
     private static ArrayAdapter<Note> adapter;
     private static ArrayAdapter<Note> filteredAdapter;
     private static Context context;
-    private static LinearLayout tagLayout;
-    private static ListView listView;
 
     // Status is non-null if decryption is successful.
     // Despite this being a public variable, it does not grant access to the data
@@ -53,43 +47,77 @@ public class NoteManager {
     public static String status;
     private static String password;
 
-    // Separates note objects in document form
-    private static final String delimiter = "\n---\n";
+    private static String fileName = "notes.encrypted";
+    private static final String delimiter = "\n---\n"; // Separates note objects in document form
 
     // Initializes list view's adapter, loads decrypted notes if the given password is valid
-    public NoteManager(final ListView listView, final Context context, final String password, final LinearLayout tagLayout) {
+    public NoteManager(final Context context) {
         this.context = context;
-
-        // If the master password was not changed from the original generated one then use it
-        this.password = password;
-        if (usingDefaultPassword(context)) {
-            this.password = getDefaultPassword(context);
-            this.status = "Active";
-        }
-
         this.adapter = new ArrayAdapter<Note>(context, R.layout.note_item);
         this.filteredAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
-        this.tagLayout = tagLayout;
-        this.listView = listView;
-        this.listView.setAdapter(adapter);
-        this.listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+        ActivityMain.listView.setAdapter(adapter);
+        ActivityMain.listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (filteredAdapter.getCount() > 0) {
-                    // Filter being used, show relevent items
+                    // Filter being used, show relevant items
                     ActivityMain.noteContentPreview(false, context, filteredAdapter.getItem(position));
                 } else {
                     ActivityMain.noteContentPreview(false, context, adapter.getItem(position));
                 }
             }
         });
+    }
 
-        List<Note> notes = NoteManager.decrypt();
-        if (notes != null) {
+    // Only called once the app is installed: generate a default password and add welcome notes
+    private void handleFirstStartup() {
+        NoteManager.newDefaultKey(context);
+        this.password = getDefaultPassword(context);
+
+        // Insert all and don't save changes until all have been added to avoid having too many
+        // background threats, which `addNote` would spin up.
+        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_3)), 0);
+        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_2)), 0);
+        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_1)), 0);
+        saveChanges(adapter);
+    }
+
+    // Attempt to decrypt the note content using a given password.
+    // If the password does not work then return null, otherwise non-null.
+    public String unlock(String password) {
+
+        // Unlock without password prompt if this is the first time running the app
+        SharedPreferences sharedPrefs = context.getSharedPreferences("temp", MODE_PRIVATE);
+        if (sharedPrefs.getBoolean("firstRun", true)) {
+            // Run this only once when a new users installs the app
+            sharedPrefs.edit().putBoolean("firstRun", false).commit();
+            this.status = "Active";
+            handleFirstStartup();
+            showTagUI();
+            return "";
+        }
+
+        // If the master password was not changed from the original generated one then use it
+        if (usingDefaultPassword(context)) {
+            this.password = getDefaultPassword(context);
+            this.status = "Active";
+        } else {
+            this.password = password;
+        }
+
+        // If the decrypt function does not return a valid list of notes then the password did not work
+        List<Note> notes = decrypt();
+        if (notes == null) {
+            this.status = null;
+            return null;
+        } else {
             this.status = "Active";
             adapter.addAll(notes);
             showTagUI();
+            ActivityMain.handleIntents();
         }
+        return "";
     }
 
     // Given a file stream return the file contents
@@ -117,14 +145,10 @@ public class NoteManager {
     public static void backup() {
         try {
             File file = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS).getPath(), "notes.encrypted");
+                    Environment.DIRECTORY_DOWNLOADS).getPath(), fileName);
             FileOutputStream output = new FileOutputStream(file);
             output.write((getFileContent(context.openFileInput("notes")) + "\n").getBytes());
             output.close();
-            Toast notify = Toast.makeText(
-                    context, "Saved encrypted notes to 'Downloads' folder.", Toast.LENGTH_LONG);
-            notify.setGravity(Gravity.CENTER, 0, 0);
-            notify.show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -135,7 +159,7 @@ public class NoteManager {
     // Copy a text file (encrypted or plaintext) from an external location into this app
     public void restore() {
         // First delete all notes
-        ActivityMain.showDeleteConfirmation(
+        Dialogs.showDeleteConfirmation(
                 true, context, "Delete All Notes?",
                 "This action cannot be undone.", null);
 
@@ -149,13 +173,15 @@ public class NoteManager {
     // "Change Master Password" option in the menu.
     public static String newDefaultKey(Context context) {
         try {
-            String keyPhrase = AesCbcWithIntegrity.generateKey().getIntegrityKey().toString();
-            FileOutputStream cipherStream = context.openFileOutput("default", Context.MODE_PRIVATE);
+            PasswordGenerator passwordGenerator = new PasswordGenerator.PasswordGeneratorBuilder()
+                    .useDigits(true)
+                    .useLower(true)
+                    .useUpper(true)
+                    .build();
+            String keyPhrase = passwordGenerator.generate(8);
+            FileOutputStream cipherStream = context.openFileOutput("default", MODE_PRIVATE);
             cipherStream.write(keyPhrase.getBytes());
             cipherStream.close();
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-            return null;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return null;
@@ -173,7 +199,7 @@ public class NoteManager {
         return false;
     }
 
-    private static String getDefaultPassword(final Context context) {
+    public static String getDefaultPassword(final Context context) {
         try {
             return getFileContent(context.openFileInput("default"));
         } catch (FileNotFoundException e) {
@@ -209,7 +235,7 @@ public class NoteManager {
     // Reads all tags from all notes and creates buttons at the top of the main page.
     // Tapping on a tag button shows all notes with that same tag.
     private static void showTagUI() {
-        tagLayout.removeAllViews(); // Always start with a fresh view. This operation is low overhead.
+        ActivityMain.tagLayout.removeAllViews(); // Always start with a fresh view. This operation is low overhead.
 
         // Go through all items in the list view
         for (int i = 0; i < adapter.getCount(); i++) {
@@ -245,8 +271,8 @@ public class NoteManager {
                             filteredAdapter.add(targetNote);
                     }
                 }
-                listView.setAdapter(filteredAdapter);
-                tagLayout.removeAllViews();
+                ActivityMain.listView.setAdapter(filteredAdapter);
+                ActivityMain.tagLayout.removeAllViews();
 
                 // Since notes with a specific tag are being shown, add a new button to
                 // the tags layout that will allow users to clear the tag filter.
@@ -260,11 +286,11 @@ public class NoteManager {
                     public void onClick(View v) {
                         // Restore the non-filtered adapter, rebuild the tags layout
                         filteredAdapter.clear();
-                        listView.setAdapter(adapter);
+                        ActivityMain.listView.setAdapter(adapter);
                         showTagUI();
                     }
                 });
-                tagLayout.addView(clearFilter, 0);
+                ActivityMain.tagLayout.addView(clearFilter, 0);
             }
         });
         return tagButton;
@@ -294,7 +320,7 @@ public class NoteManager {
     public static void clearSearch(boolean swapAdapters) {
         filteredAdapter.clear();
         if (swapAdapters)
-            listView.setAdapter(adapter);
+            ActivityMain.listView.setAdapter(adapter);
     }
 
     // Given a user defined query return all Note objects that contain terms related to the query
@@ -314,7 +340,7 @@ public class NoteManager {
 //            }
 //        }
         // TODO: The found notes should be ordered by relevance. If a note's content matches the search string perfectly then use found.add(0, note) to add it to the top (index zero)
-        listView.setAdapter(filteredAdapter);
+        ActivityMain.listView.setAdapter(filteredAdapter);
     }
 
 
@@ -330,7 +356,7 @@ public class NoteManager {
             String ciphertextString = cipherTextIvMac.toString();
 
             // Write cipher string to the encrypted file in private mode
-            FileOutputStream cipherStream = context.openFileOutput("notes", Context.MODE_PRIVATE);
+            FileOutputStream cipherStream = context.openFileOutput("notes", MODE_PRIVATE);
             cipherStream.write(ciphertextString.getBytes());
             cipherStream.close();
         } catch (GeneralSecurityException e) {
@@ -350,7 +376,7 @@ public class NoteManager {
             // If the file doesn't exist then generate a salt
             File file = context.getFileStreamPath("salt");
             if (file == null || !file.exists()) {
-                FileOutputStream cipherStream = context.openFileOutput("salt", Context.MODE_PRIVATE);
+                FileOutputStream cipherStream = context.openFileOutput("salt", MODE_PRIVATE);
                 cipherStream.write(AesCbcWithIntegrity.generateSalt());
                 cipherStream.close();
             }
