@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2018 Server Under the Mountain (SUM) License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="false">
+        <shape android:shape="oval">
+            <solid android:color="#455A64"/>
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <solid android:color="#37474F"/>
+        </shape>
+    </item>
+</selector>

@@ -1,0 +1,36 @@
+<!-- Copyright (C) 2018 Server Under the Mountain (SUM) License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/add"
+        android:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="Add Note"/>
+
+    <item
+        android:id="@+id/search"
+        android:showAsAction="collapseActionView"
+        android:actionViewClass="android.widget.SearchView"
+        android:title="Search"/>
+
+    <item
+        android:id="@+id/importDatabase"
+        android:showAsAction="collapseActionView"
+        android:title="Import"/>
+
+    <item
+        android:id="@+id/backup"
+        android:showAsAction="collapseActionView"
+        android:title="Backup"/>
+
+    <item
+        android:id="@+id/security"
+        android:showAsAction="collapseActionView"
+        android:title="Password"/>
+
+    <item
+        android:id="@+id/fingerprint"
+        android:showAsAction="collapseActionView"
+        android:title="Fingerprint"/>
+
+</menu>
+
