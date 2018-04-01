@@ -100,14 +100,16 @@ public class ActivityMain extends Activity {
     protected void onResume() {
         super.onResume();
         // Accept NFC input as password
-        nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
+        if (nfcAdapter != null)
+            nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         // Disable NFC input as password
-        nfcAdapter.disableForegroundDispatch(this);
+        if (nfcAdapter != null)
+            nfcAdapter.disableForegroundDispatch(this);
     }
 
     @Override
