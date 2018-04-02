@@ -215,8 +215,7 @@ public class ActivityMain extends Activity {
                 break;
             case R.id.backup:
                 NoteManager.backup();
-                if (NoteManager.usingDefaultPassword(context))
-                    Dialogs.showExportDialog(context);
+                Dialogs.showExportDialog(context);
                 break;
             case R.id.importDatabase:
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
