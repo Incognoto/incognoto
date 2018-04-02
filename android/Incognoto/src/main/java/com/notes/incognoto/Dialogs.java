@@ -172,7 +172,7 @@ public class Dialogs {
         inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (newPassInput.getText().toString().length() > 3 && confirmNewPassInput.getText().toString().length() > 3) {
+                if (newPassInput.getText().toString().length() > 0 && confirmNewPassInput.getText().toString().length() > 0) {
                     if (usingDefaultPassword) {
                         // Using a generated password, don't require old password
                         if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
@@ -213,10 +213,9 @@ public class Dialogs {
                 NoteManager.setNewPassword(null, data);
                 context.deleteFile("default"); // Delete the default password file
                 Toast notify = Toast.makeText(
-                        context, "Success. Test your authentication.", Toast.LENGTH_LONG);
+                        context, "Success. Restart the app to test your authentication.", Toast.LENGTH_LONG);
                 notify.setGravity(Gravity.CENTER, 0, 0);
                 notify.show();
-                Dialogs.displayPasswordDialog(noteManager, context, "Notes Are Locked");
             }
         });
         builder1.setNegativeButton("No", new DialogInterface.OnClickListener() {

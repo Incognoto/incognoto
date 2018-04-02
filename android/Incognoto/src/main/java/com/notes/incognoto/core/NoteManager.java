@@ -257,16 +257,31 @@ public class NoteManager {
     private static void showTagUI() {
         ActivityMain.tagLayout.removeAllViews(); // Always start with a fresh view. This operation is low overhead.
 
-        // Go through all items in the list view
+        // Go through each note in the list and each tag for each note to find all non-duplicate tags
+        List<String> allTags = new ArrayList<>();
         for (int i = 0; i < adapter.getCount(); i++) {
-            final Note note = adapter.getItem(i);
+            List<String> localTags = adapter.getItem(i).getTags();
+            for (int j = 0; j < localTags.size(); j++) {
 
-            // For each tag in a note add a button to the main activity's tag section.
-            // TODO: avoid duplicates. Currently if you have two tags with "#something" then it will create two buttons for "#something" which is redundant
-            for (final String tag : note.getTags()) {
-                ActivityMain.tagLayout.addView(createTagButton(tag));
+                // If the tag has already been added then ignore it
+                String targetTag = localTags.get(j);
+                if (!tagExists(allTags, targetTag))
+                   allTags.add(targetTag);
             }
         }
+
+        // Add new list of all non-duplicate tags to the UI
+        for (String tag : allTags) {
+            ActivityMain.tagLayout.addView(createTagButton(tag));
+        }
+    }
+
+    private static boolean tagExists(List<String> allTags, String tag) {
+        for (int i = 0; i < allTags.size(); i++) {
+            if (allTags.get(i).equals(tag))
+                return true;
+        }
+        return false;
     }
 
     // Create a button that's loaded into the tagLayout which allows users to filter
@@ -345,20 +360,20 @@ public class NoteManager {
 
     // Given a user defined query return all Note objects that contain terms related to the query
     public static void search(String query) {
-        ArrayAdapter<Note> tempAdapter = adapter;
-        NoteSearch searchManager = new NoteSearch(adapter, query);
-        filteredAdapter = searchManager.getFoundNoteList();
-        List<Note> found = new ArrayList<>();
+//        ArrayAdapter<Note> tempAdapter = adapter;
+//        NoteSearch searchManager = new NoteSearch(adapter, query);
+//        filteredAdapter = searchManager.getFoundNoteList();
+//        List<Note> found = new ArrayList<>();
 
-//        for (int i = 0; i < adapter.getCount(); i++) {
-//            Note note = adapter.getItem(i);
-//            String content = note.getNoteContent();
-//
-//            // TODO: This currently looks for exact string matches. It should split the query into words and search for each one
-//            if (content.contains(query)) {
-//                filteredAdapter.add(note);
-//            }
-//        }
+        for (int i = 0; i < adapter.getCount(); i++) {
+            Note note = adapter.getItem(i);
+            String content = note.getNoteContent();
+
+            // TODO: This currently looks for exact string matches. It should split the query into words and search for each one
+            if (content.contains(query)) {
+                filteredAdapter.add(note);
+            }
+        }
         // TODO: The found notes should be ordered by relevance. If a note's content matches the search string perfectly then use found.add(0, note) to add it to the top (index zero)
         ActivityMain.listView.setAdapter(filteredAdapter);
     }
@@ -394,23 +409,46 @@ public class NoteManager {
     public static void enrollFingerprint() {
         // Enroll flow for binding a password to a fingerprint
         try {
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            File file = new File(Environment.DIRECTORY_DOWNLOADS+"/incognoto");
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ks.load(null, password.toCharArray());
+//            FileOutputStream fos = new FileOutputStream("incognoto");
+            ks.store(fileOutputStream, password.toCharArray());
+//            fos.close();
+            fileOutputStream.close();
+
+
+
             // Register the custom password with keystore so the fingerprint is tied to the key phrase
-            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
-            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-            keyStore.setEntry("incognoto", new KeyStore.SecretKeyEntry(key.getIntegrityKey()),
-                    new KeyProtection.Builder(KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC).build());
+//            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
+//            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+//            keyStore.load(null, null);
+
+
+//            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+//            ks.load(null, password.toCharArray());
+//
+//            FileOutputStream fos = new FileOutputStream("incognoto");
+//            ks.store(fos, password.toCharArray());
+//            fos.close();
+
+
+
+
+//            ks.setEntry("incognoto", new KeyStore.SecretKeyEntry(key.getIntegrityKey()),
+//                    new KeyProtection.Builder(KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+//                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+//                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC).build());
+
             Log.e("INCOGNOTO", "enrolled print");
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
             e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -436,12 +474,13 @@ public class NoteManager {
                     // Retrieve the fingerprint that was bound to the password in the key store
 
                     KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                    ks.load(null, null);
 //                    char[] password = "some password".toCharArray();
-                    ks.load(null, password.toCharArray());
+//                    ks.load(null, password.toCharArray());
                     // Store away the keystore.
-                    FileOutputStream fos = new FileOutputStream("incognoto");
-                    ks.store(fos, password.toCharArray());
-                    fos.close();
+//                    FileOutputStream fos = new FileOutputStream("incognoto");
+//                    ks.store(fos, password.toCharArray());
+//                    fos.close();
 
 
 //                    KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
@@ -474,7 +513,6 @@ public class NoteManager {
                     // starts listening for fingerprints with the initialised crypto object
                     fingerprintManager.authenticate(cryptoObject, new CancellationSignal(), 0,
                             authenticationCallback,null);
-//                    FingerprintManager.AuthenticationResult result = new FingerprintManager.AuthenticationResult()
 
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
@@ -483,8 +521,6 @@ public class NoteManager {
                 } catch (InvalidKeyException e) {
                     e.printStackTrace();
                 } catch (GeneralSecurityException e) {
-                    e.printStackTrace();
-                } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
