@@ -18,7 +18,7 @@ By default your data is encrypted using a cryptographically secure generated pas
    Peer reviewed code under a GPLv2 license. Security nerds approve.
    
 ### Minimal Footprint
-   With an app size of around 400kB and low memory usage, Incognoto is lightweight and lightning fast on any device.
+   With an app size of around 400kB and low memory usage, Incognoto is lightweight and lightning fast on any device. There are no external libraries used so security audits are significantly more simple.
    
 ### Incognito Mode
    Blocks screenshots and hide content when you switch between apps.
