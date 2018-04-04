@@ -360,22 +360,20 @@ public class NoteManager {
 
     // Given a user defined query return all Note objects that contain terms related to the query
     public static void search(String query) {
-//        ArrayAdapter<Note> tempAdapter = adapter;
-//        NoteSearch searchManager = new NoteSearch(adapter, query);
-//        filteredAdapter = searchManager.getFoundNoteList();
-//        List<Note> found = new ArrayList<>();
 
-        for (int i = 0; i < adapter.getCount(); i++) {
-            Note note = adapter.getItem(i);
-            String content = note.getNoteContent();
-
-            // TODO: This currently looks for exact string matches. It should split the query into words and search for each one
-            if (content.contains(query)) {
-                filteredAdapter.add(note);
+            ArrayList<Note> noteArg = new ArrayList();
+            for(int i = 0;i<adapter.getCount();i++){
+                noteArg.add(adapter.getItem(i));
             }
-        }
-        // TODO: The found notes should be ordered by relevance. If a note's content matches the search string perfectly then use found.add(0, note) to add it to the top (index zero)
-        ActivityMain.listView.setAdapter(filteredAdapter);
+            NoteSearch searchObj = new NoteSearch(noteArg,query);
+            ArrayList<Note> foundNotes = searchObj.getFoundNoteList();
+
+            for(int j = 0;j < foundNotes.size();j++){
+                filteredAdapter.add(foundNotes.get(j));
+            }
+
+            ActivityMain.listView.setAdapter(filteredAdapter);
+
     }
 
 
