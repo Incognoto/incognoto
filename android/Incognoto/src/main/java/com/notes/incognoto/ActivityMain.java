@@ -150,7 +150,7 @@ public class ActivityMain extends Activity {
     // Accepts string input from elsewhere, if you do it manually.
     public static void handleIntents() {
         if (intent.getType() != null) {
-            if (intent.getType().toString().equals("application/octet-stream")) {
+            if (intent.getType().equals("application/octet-stream")) {
                 // Accept any encrypted notes file
                 // TODO: prompt for storage permission if not already given
                 Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
