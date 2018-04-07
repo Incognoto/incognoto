@@ -1,9 +1,10 @@
 /*
-* Copyright (C) 2018 Incognoto
-* License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
-*/
+ * Copyright (C) 2018 Incognoto
+ * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
+ */
 package com.notes.incognoto.core;
 
+import android.util.Log;
 import android.widget.ArrayAdapter;
 
 import java.util.ArrayList;
@@ -16,24 +17,24 @@ public class NoteSearch {
     // Takes array of notes and parses for string
     // String is the search string to be parsed
 
-    private ArrayAdapter<Note> noteList;
-    private ArrayAdapter<Note> foundNoteList;
+    private ArrayList<Note> noteList = new ArrayList();
+    private ArrayList<Note> foundNoteList = new ArrayList();
     private String searchString;
     private ArrayList<String> searchWords = new ArrayList();
     private ArrayList<Integer> searchOperands = new ArrayList();
     //USE FIRST DUMMY VALUE OF -1, HAVE 0 REP AND, 1 REP OR, 2 REP NOT
 
-    public void setNoteList(ArrayAdapter<Note> nl){
+    public void setNoteList(ArrayList<Note> nl){
         this.noteList = nl;
     }
-    public ArrayAdapter<Note> getNoteList(){
+    public ArrayList<Note> getNoteList(){
         return this.noteList;
     }
 
-    public void setFoundNoteList(ArrayAdapter<Note> fnl){
+    public void setFoundNoteList(ArrayList<Note> fnl){
         this.foundNoteList = fnl;
     }
-    public ArrayAdapter<Note> getFoundNoteList(){return this.foundNoteList;}
+    public ArrayList<Note> getFoundNoteList(){return this.foundNoteList;}
     private void addToFoundNotes(Note match){
         this.foundNoteList.add(match);
     }
@@ -45,7 +46,7 @@ public class NoteSearch {
         return this.searchString;
     }
 
-    public NoteSearch(ArrayAdapter<Note> masterList, String query){
+    public NoteSearch(ArrayList<Note> masterList, String query){
         setNoteList(masterList);
         setSearchString(query);
         search();
@@ -56,16 +57,14 @@ public class NoteSearch {
 
         for(int i = 0; i < searchOperands.size(); i++){
             int j  = searchOperands.get(i);
-            switch(j){
-                case -1:
-                    initSearch(searchWords.get(i));
-                case 0:
-                    andOperation(searchWords.get(i));
-                case 1:
-                    orOperation(searchWords.get(i));
-                case 2:
-                    notOperation(searchWords.get(i));
-            }
+            if(j==-1)
+                initSearch(searchWords.get(i));
+            if(j==0)
+                andOperation(searchWords.get(i));
+            if(j==1)
+                orOperation(searchWords.get(i));
+            if(j==2)
+                notOperation(searchWords.get(i));
         }
 
     }
@@ -98,49 +97,34 @@ public class NoteSearch {
     }
 
     private void initSearch(String search){
-        for(int i = 0; i < noteList.getCount(); i++){
-            if(noteList.getItem(i).getNoteContent().contains(search)){
-                addToFoundNotes(noteList.getItem(i));
+        for(int i = 0; i < noteList.size(); i++){
+            if(noteList.get(i).getNoteContent().contains(search)){
+                addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void andOperation(String search){
-        for(int i = 0; i < foundNoteList.getCount(); i++){
-            if(!foundNoteList.getItem(i).getNoteContent().contains(search)){
-                foundNoteList.remove(foundNoteList.getItem(i));
+        for(int i = 0; i < foundNoteList.size(); i++){
+            if(!foundNoteList.get(i).getNoteContent().contains(search)){
+                foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
         }
     }
     private void orOperation(String search){
-        for(int i = 0; i < noteList.getCount(); i++){
-            if(noteList.getItem(i).getNoteContent().contains(search)){
-                addToFoundNotes(noteList.getItem(i));
+        for(int i = 0; i < noteList.size(); i++){
+            if(noteList.get(i).getNoteContent().contains(search)){
+                addToFoundNotes(noteList.get(i));
             }
         }
     }
-    private void notOperation(String search){
-        for(int i = 0; i < foundNoteList.getCount(); i++){
-            if(foundNoteList.getItem(i).getNoteContent().contains(search)){
-                foundNoteList.remove(foundNoteList.getItem(i));
+    private void notOperation(String search) {
+        for (int i = 0; i < foundNoteList.size(); i++) {
+            if (foundNoteList.get(i).getNoteContent().contains(search)) {
+                foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
         }
     }
-
-//    private boolean contains(Note note, String search){
-//        String noteString = note.getNoteContent();
-//        int i = 0;
-//        int j = search.length() - 1;
-//
-//        while(j < noteString.length()){
-//            if(noteString.substring(i,j).equals(search)){
-//                return true;
-//            }
-//            i++;
-//            j++;
-//        }
-//        return false;
-//    }
 
 }
