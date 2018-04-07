@@ -4,29 +4,22 @@
 */
 package com.notes.incognoto.core;
 
-import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.hardware.fingerprint.FingerprintManager;
-import android.os.Build;
-import android.os.CancellationSignal;
 import android.os.Environment;
-import android.security.keystore.KeyProperties;
-import android.security.keystore.KeyProtection;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.notes.incognoto.ActivityMain;
 import com.notes.incognoto.Dialogs;
 import com.notes.incognoto.R;
 import com.notes.incognoto.sec.AesCbcWithIntegrity;
-import com.notes.incognoto.sec.PasswordGenerator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,18 +30,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -90,41 +73,10 @@ public class NoteManager {
         });
     }
 
-    // Only called once the app is installed: generate a default password and add welcome notes
-    private void handleFirstStartup() {
-        NoteManager.newDefaultKey(context);
-        this.password = getDefaultPassword(context);
-
-        // Insert all and don't save changes until all have been added to avoid having too many
-        // background threats, which `addNote` would spin up.
-        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_3)), 0);
-        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_2)), 0);
-        adapter.insert(new Note(context.getResources().getString(R.string.welcome_note_1)), 0);
-        saveChanges(adapter);
-    }
-
     // Attempt to decrypt the note content using a given password.
     // If the password does not work then return null, otherwise non-null.
-    public String unlock(String password) {
-
-        // Unlock without password prompt if this is the first time running the app
-        SharedPreferences sharedPrefs = context.getSharedPreferences("temp", MODE_PRIVATE);
-        if (sharedPrefs.getBoolean("firstRun", true)) {
-            // Run this only once when a new users installs the app
-            sharedPrefs.edit().putBoolean("firstRun", false).commit();
-            this.status = "Active";
-            handleFirstStartup();
-            showTagUI();
-            return "";
-        }
-
-        // If the master password was not changed from the original generated one then use it
-        if (usingDefaultPassword(context)) {
-            this.password = getDefaultPassword(context);
-            this.status = "Active";
-        } else {
-            this.password = password;
-        }
+    public String unlock(String passwordAttempt) {
+        password = passwordAttempt;
 
         // If the decrypt function does not return a valid list of notes then the password did not work
         List<Note> notes = decrypt();
@@ -186,69 +138,34 @@ public class NoteManager {
         // TODO: Show prompt for import of data set. After selecting the file then prompt for the passphrase
     }
 
-
-    // On first startup the user is given a randomly generated master password.
-    // This is to enable users to use the app without having to set or remember a master password.
-    // It's recommended that the generated master password is changed using the
-    // "Change Master Password" option in the menu.
-    public static String newDefaultKey(Context context) {
-        try {
-            PasswordGenerator passwordGenerator = new PasswordGenerator.PasswordGeneratorBuilder()
-                    .useDigits(true)
-                    .useLower(true)
-                    .useUpper(true)
-                    .build();
-            String keyPhrase = passwordGenerator.generate();
-            FileOutputStream cipherStream = context.openFileOutput("default", MODE_PRIVATE);
-            cipherStream.write(keyPhrase.getBytes());
-            cipherStream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return null;
-    }
-
-    // Detects if the user has set a new master password.
-    public static boolean usingDefaultPassword(final Context context) {
-        if (getDefaultPassword(context) != null)
-            return true;
-        return false;
-    }
-
-    public static String getDefaultPassword(final Context context) {
-        try {
-            return getFileContent(context.openFileInput("default"));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     // Starts an asynchronous call to save all notes in an encrypted state
-    private static void saveChanges(final ArrayAdapter<Note> adapter) {
-        // This may be resource intensive, depending on the number of notes and the content,
-        // so start this process on a new thread.
-        // Start by copying the adapter to a new memory space so it can be asynchronous
-        final ArrayAdapter<Note> tempAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
-        int adapterSize = adapter.getCount();
-        for(int i = 0; i < adapterSize; i++) {
-            tempAdapter.add(adapter.getItem(i));
-        }
-        Thread encryptThread = new Thread() {
-            @Override
-            public void run() {
-                String allData = "";
-                for(int i = 0; i < tempAdapter.getCount(); i++) {
-                    allData += tempAdapter.getItem(i) + "\n---\n";
-                }
-                NoteManager.encrypt(allData);
+    private static void saveChanges(final ArrayAdapter<Note> adapter, boolean newThread) {
+        status = "Active";
+        if (newThread) {
+            // This may be resource intensive, depending on the number of notes and the content,
+            // so start this process on a new thread.
+            // Start by copying the adapter to a new memory space so it can be asynchronous
+            final ArrayAdapter<Note> tempAdapter = new ArrayAdapter<Note>(context, R.layout.note_item);
+            int adapterSize = adapter.getCount();
+            for(int i = 0; i < adapterSize; i++) {
+                tempAdapter.add(adapter.getItem(i));
             }
-        };
-        encryptThread.start();
+            Thread encryptThread = new Thread() {
+                @Override
+                public void run() {
+                    String allData = "";
+                    for (int i = 0; i < tempAdapter.getCount(); i++)
+                        allData += tempAdapter.getItem(i) + "\n---\n";
+                    NoteManager.encrypt(allData);
+                }
+            };
+            encryptThread.start();
+        } else {
+            String allData = "";
+            for (int i = 0; i < adapter.getCount(); i++)
+                allData += adapter.getItem(i) + "\n---\n";
+            NoteManager.encrypt(allData);
+        }
         showTagUI();
     }
 
@@ -276,6 +193,7 @@ public class NoteManager {
         }
     }
 
+    // Used to check if a tag button for a specific tag is already being shown in the tags layout
     private static boolean tagExists(List<String> allTags, String tag) {
         for (int i = 0; i < allTags.size(); i++) {
             if (allTags.get(i).equals(tag))
@@ -334,20 +252,20 @@ public class NoteManager {
     // Remove a note and reload the list view to reflect the changes
     public static void removeNote(Note note) {
         adapter.remove(note);
-        saveChanges(adapter);
+        saveChanges(adapter, true);
     }
 
     // Delete all notes and tags
     // Called by the "Delete All" menu option
     public static void clearAll() {
         adapter.clear();
-        saveChanges(adapter);
+        saveChanges(adapter, true);
     }
 
     // Add a note and reload the list view to reflect the changes
     public static void addNote(Note note) {
         adapter.insert(note, 0); // Always add to top (index 0)
-        saveChanges(adapter);
+        saveChanges(adapter, true);
     }
 
     // Clear the filter adapter to show no results in the search
@@ -405,130 +323,6 @@ public class NoteManager {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
-    public static void enrollFingerprint() {
-        // Enroll flow for binding a password to a fingerprint
-        try {
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            File file = new File(Environment.DIRECTORY_DOWNLOADS+"/incognoto");
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            ks.load(null, password.toCharArray());
-//            FileOutputStream fos = new FileOutputStream("incognoto");
-            ks.store(fileOutputStream, password.toCharArray());
-//            fos.close();
-            fileOutputStream.close();
-
-
-
-            // Register the custom password with keystore so the fingerprint is tied to the key phrase
-//            AesCbcWithIntegrity.SecretKeys key = AesCbcWithIntegrity.generateKeyFromPassword(password, getSalt());
-//            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-//            keyStore.load(null, null);
-
-
-//            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-//            ks.load(null, password.toCharArray());
-//
-//            FileOutputStream fos = new FileOutputStream("incognoto");
-//            ks.store(fos, password.toCharArray());
-//            fos.close();
-
-
-
-
-//            ks.setEntry("incognoto", new KeyStore.SecretKeyEntry(key.getIntegrityKey()),
-//                    new KeyProtection.Builder(KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-//                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-//                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC).build());
-
-            Log.e("INCOGNOTO", "enrolled print");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void fingerprintAuth() {
-        // Fingerprint API only available on from Android 6.0 (M)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // ContextCompat.checkSelfPermission(context, Manifest.permission.USE_FINGERPRINT);
-            // TODO: check if we have permission, prompt user if we don't
-            FingerprintManager fingerprintManager = (FingerprintManager) context.getSystemService(Context.FINGERPRINT_SERVICE);
-            if (!fingerprintManager.isHardwareDetected()) {
-                // Device doesn't support fingerprint authentication
-                Log.e("INCOGNOTO", "fingerprint hardware not detected");
-                return;
-            } else if (!fingerprintManager.hasEnrolledFingerprints()) {
-                // User hasn't enrolled any fingerprints to authenticate with
-                // They must go into the Android settings and register the fingerprint scanner
-                Log.e("INCOGNOTO", "fingerprint has not enrolled");
-            } else {
-                // Everything is ready for fingerprint authentication
-                try {
-                    Log.e("INCOGNOTO", "listening for fingerprint");
-                    // Retrieve the fingerprint that was bound to the password in the key store
-
-                    KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-                    ks.load(null, null);
-//                    char[] password = "some password".toCharArray();
-//                    ks.load(null, password.toCharArray());
-                    // Store away the keystore.
-//                    FileOutputStream fos = new FileOutputStream("incognoto");
-//                    ks.store(fos, password.toCharArray());
-//                    fos.close();
-
-
-//                    KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-                    SecretKey keyStoreKey = (SecretKey) ks.getKey("incognoto", password.toCharArray());
-                    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    cipher.init(Cipher.DECRYPT_MODE, keyStoreKey);
-                    FingerprintManager.CryptoObject cryptoObject = new FingerprintManager.CryptoObject(cipher);
-                    FingerprintManager.AuthenticationCallback authenticationCallback = new FingerprintManager.AuthenticationCallback() {
-                        @Override
-                        public void onAuthenticationError(int errorCode, CharSequence errString) {
-                            super.onAuthenticationError(errorCode, errString);
-                            Log.e("INCOGNOTO", "fingerprint auth error");
-                            Toast.makeText(context, "auth error", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
-                            super.onAuthenticationSucceeded(result);
-                            Log.e("INCOGNOTO", "fingerprint success");
-                            Toast.makeText(context, "auth success", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onAuthenticationFailed() {
-                            super.onAuthenticationFailed();
-                            Log.e("INCOGNOTO", "fingerprint failed");
-                            Toast.makeText(context, "auth failed", Toast.LENGTH_SHORT).show();
-                        }
-                    };
-                    // starts listening for fingerprints with the initialised crypto object
-                    fingerprintManager.authenticate(cryptoObject, new CancellationSignal(), 0,
-                            authenticationCallback,null);
-
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (NoSuchPaddingException e) {
-                    e.printStackTrace();
-                } catch (InvalidKeyException e) {
-                    e.printStackTrace();
-                } catch (GeneralSecurityException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     private static byte[] getSalt() throws GeneralSecurityException {
         FileInputStream fileInputStream = null;
         try {
@@ -556,17 +350,17 @@ public class NoteManager {
         return AesCbcWithIntegrity.generateSalt();
     }
 
-    // Given the old password and the new password, check for validity
-    // and re-encrypt all notes with the new password
-    public static String setNewPassword(String oldPassword, final String newPassword) {
-        if (oldPassword == null || oldPassword.equals(newPassword)) {
-            // using default password
-            password = newPassword;
-            saveChanges(adapter);
-            return "Success";
-        } else {
-            return null;
+    // Re-encrypt all notes with the new password
+    public static void setNewPassword(final String newPassword, final boolean showWelcomeNotes) {
+        password = newPassword;
+
+        if (showWelcomeNotes) {
+            // Add the default notes to the encrypted contents so serve as examples
+            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_3)));
+            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_2)));
+            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_1)));
         }
+        saveChanges(adapter, false);
     }
 
     // Decrypt the private internal notes, given a valid password in the NoteManager constructor.

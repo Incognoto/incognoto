@@ -1,5 +1,16 @@
 package com.notes.incognoto.sec;
 
+import android.content.Intent;
+import android.nfc.NdefMessage;
+import android.nfc.NfcAdapter;
+import android.os.Parcelable;
+
+import com.notes.incognoto.ActivityMain;
+
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Used to read a YubiKey NEO's NFC payload as an input device for decryption
  */
@@ -37,5 +48,21 @@ public class NFCPayload {
             buf.append(fromScanCode(b & 0xff));
         }
         return buf.toString();
+    }
+
+    public static void handleIntent(Intent intent) {
+        final Pattern OTP_PATTERN = Pattern.compile("^https://my\\.yubico\\.com/neo/([a-zA-Z0-9!]+)$");
+        Matcher matcher = OTP_PATTERN.matcher(intent.getDataString());
+        if (matcher.matches()) {
+            // Found yubikey NEO pattern
+            ActivityMain.handleHardwareKey(matcher.group(1));
+        } else {
+            // Parse the key from the from the hardware device parcelable if it's not in the NEO format
+            Parcelable[] raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            byte[] bytes = ((NdefMessage) raw[0]).toByteArray();
+            bytes = Arrays.copyOfRange(bytes, 23, bytes.length);
+            ActivityMain.handleHardwareKey(new NFCPayload().fromScanCodes(bytes));
+        }
+
     }
 }

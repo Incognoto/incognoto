@@ -12,6 +12,7 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -20,6 +21,7 @@ import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -39,10 +41,12 @@ import com.notes.incognoto.sec.NFCPayload;
 import com.notes.incognoto.core.Note;
 import com.notes.incognoto.core.NoteManager;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,7 +72,7 @@ public class ActivityMain extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Secure the view: disable screenshots and block other apps from acquiring screen content
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE); // TODO: uncomment on release
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             // Additional screen security options in versions later than JellyBean
             // Hide notes in the "recent" app preview list
@@ -89,10 +93,12 @@ public class ActivityMain extends Activity {
         pendingIntent = PendingIntent.getActivity(this, 0,
                 new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 
-        // Attempt to decrypt the note file. This also handles the startup using a default password.
-        if (noteManager.unlock("test") == null) {
-            // Default password is not being used, show password prompt
-            Dialogs.displayPasswordDialog(noteManager, context, "Notes Are Locked");
+        // If it's the first startup let the user assign a password, otherwise prompt for decryption phrase
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (preferences.getBoolean("firstStartup", true)) {
+            Dialogs.showSetFirstPassword(noteManager, context);
+        } else {
+            Dialogs.displayPasswordDialog(noteManager, context, "Password");
         }
     }
 
@@ -115,35 +121,20 @@ public class ActivityMain extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-
         // When the app is open and in the foreground then accept NFC input as the decryption key
-        final Pattern OTP_PATTERN = Pattern.compile("^https://my\\.yubico\\.com/neo/([a-zA-Z0-9!]+)$");
-        Matcher matcher = OTP_PATTERN.matcher(intent.getDataString());
-        if (matcher.matches()) {
-            // Found yubikey NEO pattern
-            handleHardwareKey(matcher.group(1));
-        } else {
-            // Parse the key from the from the hardware device parcelable if it's not in the NEO format
-            Parcelable[] raw = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
-            byte[] bytes = ((NdefMessage) raw[0]).toByteArray();
-            bytes = Arrays.copyOfRange(bytes, 23, bytes.length);
-            handleHardwareKey(new NFCPayload().fromScanCodes(bytes));
-        }
+        NFCPayload.handleIntent(intent);
     }
 
     /*
     * Called when an NFC device is used when the app is in the foreground.
     */
-    public void handleHardwareKey(final String data) {
-        if (noteManager.status == null) {
-            // The user has set an NFC password already, accept the input and attempt to decrypt
-            if (Dialogs.passwordDialog != null)
-                Dialogs.passwordDialog.dismiss();
-            noteManager.unlock(data);
-        } else {
-            // The user has not set a password, ask to use the NFC tag as the password
-            Dialogs.setNewHardwareKey(noteManager, context, data);
-        }
+    public static void handleHardwareKey(final String data) {
+        // TODO: re-enable
+//        if (noteManager.unlock(data) == null) {
+//            // Not currently the key. If it's unlocked then ask to use the NFC tag as the key.
+//            if (noteManager.status != null)
+//                Dialogs.setNewHardwareKey(context, data);
+//        }
     }
 
     // If you highlight text from another app you can select "share" then select this app.
@@ -220,16 +211,13 @@ public class ActivityMain extends Activity {
             case R.id.importDatabase:
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
+                startActivityForResult(intent, 10);
                 Toast.makeText(context, "Pick an encrypted notes file to import",
                         Toast.LENGTH_SHORT).show();
-                startActivityForResult(intent, 10);
                 // `onActivityResult` is automatically called after an import file has been selected
                 break;
-            case R.id.security:
+            case R.id.password:
                 Dialogs.showNewMasterPasswordDialog(context);
-                break;
-            case R.id.fingerprint:
-                NoteManager.enrollFingerprint();
                 break;
         }
         return true;
@@ -238,18 +226,20 @@ public class ActivityMain extends Activity {
     // Called after `restore` when a file has been selected to be imported
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 10) {
-            // Activity has been started with a file to be imported
-            Uri uri = (Uri) data.getExtras().get(Intent.EXTRA_STREAM);
-            String path = uri.getLastPathSegment().replace("raw:", "");
+
+        if (requestCode == 10 && data !=  null) {
+            Uri uri = (Uri) data.getData();
+            String path = uri.getLastPathSegment();
             String content = null;
             try {
                 content = NoteManager.getFileContent(new FileInputStream(new File(path)));
+                Log.e("NOTESCONTENT", content);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            Log.e("NOTES", content);
-            // TODO: If the file is encrypted then prompt for a decryption key
+            // TODO: prompt for decryption phrase
         }
     }
 

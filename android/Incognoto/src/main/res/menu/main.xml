@@ -23,14 +23,9 @@
         android:title="Backup"/>
 
     <item
-        android:id="@+id/security"
+        android:id="@+id/password"
         android:showAsAction="collapseActionView"
         android:title="Password"/>
-
-    <item
-        android:id="@+id/fingerprint"
-        android:showAsAction="collapseActionView"
-        android:title="Fingerprint"/>
 
 </menu>
 

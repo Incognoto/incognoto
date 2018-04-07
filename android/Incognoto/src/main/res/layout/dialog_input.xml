@@ -10,6 +10,7 @@
     android:layout_marginTop="24dp"
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
+    android:layout_marginBottom="16dp"
     android:background="@android:color/transparent">
 
         <EditText
@@ -17,17 +18,10 @@
             android:imeOptions="flagNoPersonalizedLearning|actionDone"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:inputType="textPassword"
-            android:layout_width="300dp"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:id="@+id/input"
             android:textColor="@android:color/white"
             android:gravity="center"/>
-
-        <Button
-            android:id="@+id/submit"
-            android:text="Unlock"
-            android:layout_width="100dp"
-            android:layout_height="60dp"
-            android:layout_marginTop="8dp"/>
 
 </LinearLayout>

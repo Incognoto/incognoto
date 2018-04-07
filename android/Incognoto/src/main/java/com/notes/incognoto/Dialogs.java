@@ -6,12 +6,13 @@ package com.notes.incognoto;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -39,22 +40,6 @@ public class Dialogs {
 
         // If a default password is being used then display the generated password.
         String message = "\"notes.encrypted\" has been saved to your \"downloads\" folder. You will need your password to import it elsewhere.";
-        if (NoteManager.usingDefaultPassword(context)) {
-            final String password = NoteManager.getDefaultPassword(context);
-            if (password != null) {
-                message = "To import these notes you will need to enter \"" + password + "\". ";
-                message += "DO NOT lose this password! Your data cannot be recovered if the password is forgotten.";
-
-                dialogBuilder.setPositiveButton("Copy To Clipboard", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                        ClipData clip = ClipData.newPlainText("", password);
-                        clipboard.setPrimaryClip(clip);
-                        dialog.cancel();
-                    }
-                });
-            }
-        }
         dialogBuilder.setMessage(message);
 
         dialogBuilder.setNegativeButton("Done", new DialogInterface.OnClickListener() {
@@ -69,43 +54,36 @@ public class Dialogs {
 
     // Prompt user for password input and attempt to decrypt content
     public static void displayPasswordDialog(final NoteManager noteManager, final Context context, final String title) {
-        NoteManager.fingerprintAuth();
-
         passwordDialog = new Dialog(context);
         passwordDialog.setCancelable(false);
         passwordDialog.setContentView(R.layout.dialog_input);
         passwordDialog.setCanceledOnTouchOutside(false);
         passwordDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(Color.TRANSPARENT));
+                new ColorDrawable(Color.DKGRAY));
         passwordDialog.setTitle(title);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(passwordDialog.getWindow().getAttributes());
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
 
         final EditText input = (EditText) passwordDialog.findViewById(R.id.input);
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 passwordDialog.dismiss();
-                noteManager.unlock(input.getText().toString());
+                if (noteManager.unlock(input.getText().toString()) == null)
+                    displayPasswordDialog(noteManager, context, "Incorrect Password");
                 return false;
             }
         });
+
+        // Show the keyboard when the dialog displays
         passwordDialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialog) {
                 InputMethodManager imm = (InputMethodManager)
                         context.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
-
-        passwordDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                passwordDialog.dismiss();
-                noteManager.unlock(input.getText().toString());
             }
         });
 
@@ -138,25 +116,68 @@ public class Dialogs {
         alert.show();
     }
 
-    public static void showNewMasterPasswordDialog(final Context context) {
+    public static void showSetFirstPassword(final NoteManager noteManager, final Context context) {
         final Dialog inputDialog = new Dialog(context);
-        //inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         inputDialog.setContentView(R.layout.dialog_password_change);
         inputDialog.setCanceledOnTouchOutside(false);
         inputDialog.getWindow().setBackgroundDrawable(
                 new ColorDrawable(Color.DKGRAY));
-        inputDialog.setTitle("Change Master Password");
+        inputDialog.setTitle("Welcome to Incognoto");
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(inputDialog.getWindow().getAttributes());
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
-        final EditText oldPassInput = (EditText) inputDialog.findViewById(R.id.oldPass);
-        final boolean usingDefaultPassword = NoteManager.usingDefaultPassword(context);
-        if (usingDefaultPassword) {
-            // Hide the 'old password' input since there is no old password set by the user
-            oldPassInput.setVisibility(View.GONE);
-        }
+        inputDialog.findViewById(R.id.message).setVisibility(View.VISIBLE);
+        final EditText newPassInput = (EditText) inputDialog.findViewById(R.id.newPass);
+        newPassInput.setHint("Password");
+        final EditText confirmNewPassInput = (EditText) inputDialog.findViewById(R.id.confirmNewPass);
+        confirmNewPassInput.setHint("Repeat Password");
+        inputDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                InputMethodManager imm = (InputMethodManager)
+                        context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(newPassInput, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        inputDialog.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (newPassInput.getText().toString().length() > 0 && confirmNewPassInput.getText().toString().length() > 0) {
+                    if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
+                        NoteManager.setNewPassword(newPassInput.getText().toString(), true);
+
+                        // Never show "set first password" again
+                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("firstStartup", false);
+                        editor.commit();
+                        inputDialog.dismiss();
+                    } else {
+                        Toast.makeText(context, "Password Mismatch", Toast.LENGTH_LONG).show();
+                        newPassInput.setText("");
+                        confirmNewPassInput.setText("");
+                    }
+                }
+            }
+        });
+
+        inputDialog.show();
+    }
+
+    public static void showNewMasterPasswordDialog(final Context context) {
+        final Dialog inputDialog = new Dialog(context);
+        inputDialog.setContentView(R.layout.dialog_password_change);
+        inputDialog.setCanceledOnTouchOutside(false);
+        inputDialog.getWindow().setBackgroundDrawable(
+                new ColorDrawable(Color.DKGRAY));
+        inputDialog.setTitle("Change Password");
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(inputDialog.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
         final EditText newPassInput = (EditText) inputDialog.findViewById(R.id.newPass);
         final EditText confirmNewPassInput = (EditText) inputDialog.findViewById(R.id.confirmNewPass);
@@ -165,7 +186,7 @@ public class Dialogs {
             public void onShow(DialogInterface dialog) {
                 InputMethodManager imm = (InputMethodManager)
                         context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(oldPassInput, InputMethodManager.SHOW_IMPLICIT);
+                imm.showSoftInput(newPassInput, InputMethodManager.SHOW_IMPLICIT);
             }
         });
 
@@ -173,27 +194,12 @@ public class Dialogs {
             @Override
             public void onClick(View v) {
                 if (newPassInput.getText().toString().length() > 0 && confirmNewPassInput.getText().toString().length() > 0) {
-                    if (usingDefaultPassword) {
-                        // Using a generated password, don't require old password
-                        if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
-                            context.deleteFile("default"); // Delete the default password file
-                            NoteManager.setNewPassword(null, newPassInput.getText().toString());
-                            inputDialog.dismiss();
-                            Toast.makeText(context, "Password Changed", Toast.LENGTH_LONG).show();
-                        } else {
-                            // Check that the new password strings do not match
-                            oldPassInput.setText("");
-                            newPassInput.setText("");
-                            Toast.makeText(context, "Password Do Not Match", Toast.LENGTH_LONG).show();
-                        }
-                    } else if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
-                        // Changing master password without a default password, required to put in old password
+                    if (newPassInput.getText().toString().equals(confirmNewPassInput.getText().toString())) {
+                        NoteManager.setNewPassword(newPassInput.getText().toString(), false);
+                        Toast.makeText(context, "Success", Toast.LENGTH_LONG).show();
                         inputDialog.dismiss();
-                        if (NoteManager.setNewPassword(oldPassInput.getText().toString(), newPassInput.getText().toString()) == null)
-                            Toast.makeText(context, "Password Changed", Toast.LENGTH_LONG).show();
                     } else {
-                        oldPassInput.setText("");
-                        Toast.makeText(context, "Old Password Incorrect", Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, "Password Mismatch", Toast.LENGTH_LONG).show();
                     }
                 }
             }
@@ -203,14 +209,14 @@ public class Dialogs {
     }
 
     // An NFC device was detected, tell the user that it can be used as a password
-    public static void setNewHardwareKey(final NoteManager noteManager, final Context context, final String data) {
+    public static void setNewHardwareKey(final Context context, final String data) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setTitle("Hardware Key");
         builder1.setMessage("Do you want to use this as your new password?");
         builder1.setCancelable(true);
         builder1.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
-                NoteManager.setNewPassword(null, data);
+                NoteManager.setNewPassword(data, false);
                 context.deleteFile("default"); // Delete the default password file
                 Toast notify = Toast.makeText(
                         context, "Success. Restart the app to test your authentication.", Toast.LENGTH_LONG);
