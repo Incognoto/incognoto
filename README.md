@@ -12,16 +12,16 @@ All notes are encrypted and data never leaves your device without your permissio
 For when life’s accidents happen, you can rest assured that your data is available only to you. Store encrypted backups on any cloud while keeping your data locked behind your own password. Incognoto has zero knowledge of your notes so if you lose your password then we are not able to recover any data.
 
 ### Advanced Authentication
-By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, biometrics, or a hardware key, Incognoto offers the most advanced security standards.
+By default your data is encrypted using a cryptographically secure generated password. With options for a custom password, partial password/pin, or a hardware key, Incognoto offers the most advanced security standards.
 
 ### Free & Open Source
-   Peer reviewed code under a GPLv2 license. Security nerds approve.
+   Peer reviewed code under a GPLv2 license. Complete transparency so security nerds approve.
    
 ### Minimal Footprint
    With an app size of around 400kB and low memory usage, Incognoto is lightweight and lightning fast on any device. There are no external libraries used so security audits are significantly more simple.
    
 ### Incognito Mode
-   Blocks screenshots and hide content when you switch between apps.
+   Blocks screenshots and hides notes when you switch between apps.
    
 ### Quick Search & Filters
    Use #Hashtags, words, or phrases to find notes.
