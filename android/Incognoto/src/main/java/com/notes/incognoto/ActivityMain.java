@@ -81,6 +81,7 @@ public class ActivityMain extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         // Secure the view: disable screenshots and block other apps from acquiring screen content
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
 
@@ -95,7 +96,9 @@ public class ActivityMain extends Activity {
         tagLayout = findViewById(R.id.tags);
         listView = findViewById(R.id.listview);
         context = ActivityMain.this;
-        intent = getIntent();   // Any pending intents are handled after decryption
+
+        // Any pending intents are handled after decryption
+        intent = getIntent();
         noteManager = new NoteManager(context);
 
         // Start accepting a hardware based authentication method
@@ -117,6 +120,7 @@ public class ActivityMain extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
         // Accept NFC input as password
         if (nfcAdapter != null)
             nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
@@ -125,6 +129,7 @@ public class ActivityMain extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+
         // Disable NFC input as password
         if (nfcAdapter != null)
             nfcAdapter.disableForegroundDispatch(this);
@@ -133,6 +138,7 @@ public class ActivityMain extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+
         // When the app is open and in the foreground then accept NFC input as the decryption key
         NFCPayload.handleIntent(intent);
     }
@@ -197,14 +203,15 @@ public class ActivityMain extends Activity {
                 return true;
             }
         });
-        return true;
 
+        return true;
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+
         // Press back to close the app quickly and remove it from the recent tasks list
         finishAndRemoveTask();
     }
@@ -243,8 +250,7 @@ public class ActivityMain extends Activity {
 
     // Opens the default file manager and lets the user pick a file to import
     private void importNotes() {
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             // Storage permission granted, start file picker
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
@@ -261,8 +267,7 @@ public class ActivityMain extends Activity {
 
     // Opens the default file manager and lets the user pick a location to export the encrypted notes file
     private void backupNotes() {
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             intent.setType("*/");
             startActivityForResult(backupIntent, REQUEST_DIRECTORY_INTENT);
@@ -280,6 +285,7 @@ public class ActivityMain extends Activity {
     // Called after `restore` when a file has been selected to be imported
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == REQUEST_FILE_INTENT && data != null) {
             // Returned from file picker intent after a file was selected
             Uri uri = data.getData();
@@ -295,7 +301,9 @@ public class ActivityMain extends Activity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } if (requestCode == REQUEST_DIRECTORY_INTENT && data != null) {
+        }
+
+        if (requestCode == REQUEST_DIRECTORY_INTENT && data != null) {
             // Returned from directory picker intent after an export directory was selected
             Uri uri = data.getData();
             try {
