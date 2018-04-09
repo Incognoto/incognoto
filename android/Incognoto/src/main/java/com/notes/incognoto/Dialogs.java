@@ -16,8 +16,11 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,8 +66,8 @@ public class Dialogs {
         passwordDialog.setTitle(title);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(passwordDialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        lp.width = WindowManager.LayoutParams.FILL_PARENT;
+        lp.height = WindowManager.LayoutParams.FILL_PARENT;
 
         final EditText input = (EditText) passwordDialog.findViewById(R.id.input);
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -116,10 +119,11 @@ public class Dialogs {
         alert.show();
     }
 
-    public static void showSetFirstPassword(final NoteManager noteManager, final Context context) {
+    public static void showSetFirstPassword(final Context context) {
         final Dialog inputDialog = new Dialog(context);
         inputDialog.setContentView(R.layout.dialog_password_change);
         inputDialog.setCanceledOnTouchOutside(false);
+        inputDialog.setCancelable(false);
         inputDialog.getWindow().setBackgroundDrawable(
                 new ColorDrawable(Color.DKGRAY));
         inputDialog.setTitle("Welcome to Incognoto");
@@ -161,6 +165,32 @@ public class Dialogs {
                         confirmNewPassInput.setText("");
                     }
                 }
+            }
+        });
+
+        inputDialog.show();
+    }
+
+    public static void showPartialPass(final Context context) {
+        final Dialog inputDialog = new Dialog(context);
+        inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        inputDialog.setContentView(R.layout.dialog_partial_pass);
+        inputDialog.getWindow().setBackgroundDrawable(
+                new ColorDrawable(Color.DKGRAY));
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(inputDialog.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+
+        // Make the initial setting match the check box state
+        final CheckBox checkBox = (CheckBox) inputDialog.findViewById(R.id.partialPassSetting);
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        final SharedPreferences.Editor editor = preferences.edit();
+        checkBox.setChecked(preferences.getBoolean("partialPass", false));
+        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                editor.putBoolean("partialPass", isChecked).commit();
             }
         });
 

@@ -115,6 +115,7 @@ public class NoteManager {
 
     // Copy the encrypted notes file to the "Downloads" folder
     public static void backup() {
+        // TODO: ask for storage permission if not given
         try {
             File file = new File(Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS).getPath(), fileName);
@@ -131,10 +132,6 @@ public class NoteManager {
     // Copy a text file (encrypted or plaintext) from an external location into this app
     public void restore() {
         // First delete all notes
-        Dialogs.showDeleteConfirmation(
-                true, context, "Delete All Notes?",
-                "This action cannot be undone.", null);
-
         // TODO: Show prompt for import of data set. After selecting the file then prompt for the passphrase
     }
 
@@ -316,6 +313,17 @@ public class NoteManager {
             e.printStackTrace();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Override the existing internal notes file with an inbound cipher string
+    public static void importFile(String cipherText) {
+        try {
+            FileOutputStream cipherStream = context.openFileOutput("notes", MODE_PRIVATE);
+            cipherStream.write(cipherText.getBytes());
+            cipherStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

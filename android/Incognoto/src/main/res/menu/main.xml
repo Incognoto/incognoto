@@ -23,9 +23,19 @@
         android:title="Backup"/>
 
     <item
+        android:id="@+id/deleteAll"
+        android:showAsAction="collapseActionView"
+        android:title="Delete All"/>
+
+    <item
         android:id="@+id/password"
         android:showAsAction="collapseActionView"
         android:title="Password"/>
+
+    <item
+        android:id="@+id/partialPass"
+        android:showAsAction="collapseActionView"
+        android:title="Partial Pass"/>
 
 </menu>
 

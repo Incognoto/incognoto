@@ -20,6 +20,7 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -96,9 +97,11 @@ public class ActivityMain extends Activity {
         // If it's the first startup let the user assign a password, otherwise prompt for decryption phrase
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (preferences.getBoolean("firstStartup", true)) {
-            Dialogs.showSetFirstPassword(noteManager, context);
+            Dialogs.showSetFirstPassword(context);
         } else {
-            Dialogs.displayPasswordDialog(noteManager, context, "Password");
+            // Prompt for a password or a partial password if it has been enabled
+            String title = preferences.getBoolean("partialPass", false) ? "Partial Password" : "Password";
+            Dialogs.displayPasswordDialog(noteManager, context, title);
         }
     }
 
@@ -219,6 +222,14 @@ public class ActivityMain extends Activity {
             case R.id.password:
                 Dialogs.showNewMasterPasswordDialog(context);
                 break;
+            case R.id.partialPass:
+                Dialogs.showPartialPass(context);
+                break;
+            case R.id.deleteAll:
+                Dialogs.showDeleteConfirmation(
+                        true, context, "Delete All Notes?",
+                        "This action cannot be undone.", null);
+                break;
         }
         return true;
     }
@@ -228,12 +239,16 @@ public class ActivityMain extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == 10 && data !=  null) {
-            Uri uri = (Uri) data.getData();
-            String path = uri.getLastPathSegment();
+            Uri uri = data.getData();
+            String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
+            path = path.replace("primary:", "");
             String content = null;
             try {
-                content = NoteManager.getFileContent(new FileInputStream(new File(path)));
-                Log.e("NOTESCONTENT", content);
+                NoteManager.importFile(NoteManager.getFileContent(new FileInputStream(new File(path))));
+                Intent i = getBaseContext().getPackageManager()
+                        .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(i);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
