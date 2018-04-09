@@ -4,6 +4,7 @@
  */
 package com.notes.incognoto;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
@@ -13,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -57,6 +59,7 @@ import java.util.regex.Pattern;
  */
 public class ActivityMain extends Activity {
 
+    // Core UI components of the primary activity
     public static LinearLayout tagLayout;
     public static ListView listView;
     public static Context context;
@@ -68,6 +71,12 @@ public class ActivityMain extends Activity {
     // Used to accept decryption input
     NfcAdapter nfcAdapter;
     PendingIntent pendingIntent;
+
+    // Codes for app intents
+    private final int REQUEST_FILE_INTENT = 10;       // Result code after an import file is selected
+    private final int REQUEST_DIRECTORY_INTENT = 11;  // Result code after an export location is selected
+    private final int REQUEST_IMPORT_PERMISSION = 12; // Result code after storage permission is requested in the import option
+    private final int REQUEST_EXPORT_PERMISSION = 13; // Result code after storage permission is requested in the backup option
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -208,21 +217,11 @@ public class ActivityMain extends Activity {
                 break;
 
             case R.id.backup:
-                Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-                intent.setType("*/");
-                startActivityForResult(backupIntent, 11);
-                Dialogs.showExportDialog(context);
-                Toast.makeText(context, "Select a location to export the encrypted notes to.",
-                        Toast.LENGTH_LONG).show();
+                backupNotes();
                 break;
 
             case R.id.importDatabase:
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("*/*");
-                startActivityForResult(intent, 10);
-                Toast.makeText(context, "Pick an encrypted notes file to import",
-                        Toast.LENGTH_LONG).show();
-                // `onActivityResult` is automatically called after an import file has been selected
+                importNotes();
                 break;
 
             case R.id.password:
@@ -242,11 +241,47 @@ public class ActivityMain extends Activity {
         return true;
     }
 
+    // Opens the default file manager and lets the user pick a file to import
+    private void importNotes() {
+        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+            // Storage permission granted, start file picker
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            startActivityForResult(intent, REQUEST_FILE_INTENT);
+            Toast toast = Toast.makeText(context, "Pick an encrypted notes file to import",
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+            // `onActivityResult` is automatically called after an import file has been selected
+        } else {
+            requestPermissions(new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE }, REQUEST_IMPORT_PERMISSION);
+        }
+    }
+
+    // Opens the default file manager and lets the user pick a location to export the encrypted notes file
+    private void backupNotes() {
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+            Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            intent.setType("*/");
+            startActivityForResult(backupIntent, REQUEST_DIRECTORY_INTENT);
+            Dialogs.showExportDialog(context);
+            Toast toast = Toast.makeText(context, "Select a location to export the encrypted notes to.",
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+            // `onActivityResult` is automatically called after an export location has been selected
+        } else {
+            requestPermissions(new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE }, REQUEST_EXPORT_PERMISSION);
+        }
+    }
+
     // Called after `restore` when a file has been selected to be imported
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 10 && data !=  null) {
+        if (requestCode == REQUEST_FILE_INTENT && data != null) {
+            // Returned from file picker intent after a file was selected
             Uri uri = data.getData();
             String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
             path = path.replace("primary:", "");
@@ -260,10 +295,8 @@ public class ActivityMain extends Activity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            // TODO: prompt for decryption phrase
-        }
-
-        if (requestCode == 11 && data != null) {
+        } if (requestCode == REQUEST_DIRECTORY_INTENT && data != null) {
+            // Returned from directory picker intent after an export directory was selected
             Uri uri = data.getData();
             try {
                 String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
@@ -271,6 +304,22 @@ public class ActivityMain extends Activity {
                 NoteManager.backup(path);
             } catch (NullPointerException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        // Called after importNotes or exportNotes if a permission
+        if (requestCode == REQUEST_IMPORT_PERMISSION || requestCode == REQUEST_EXPORT_PERMISSION) {
+            if (!(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED))
+                Toast.makeText(context, "Storage permission is required to import and export files.", Toast.LENGTH_LONG).show();
+            else {
+                // Permission granted, call the method again
+                if (requestCode == REQUEST_IMPORT_PERMISSION)
+                    importNotes();
+                else
+                    backupNotes();
             }
         }
     }
