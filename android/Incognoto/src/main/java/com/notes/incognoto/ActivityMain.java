@@ -74,19 +74,19 @@ public class ActivityMain extends Activity {
         super.onCreate(savedInstanceState);
         // Secure the view: disable screenshots and block other apps from acquiring screen content
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            // Additional screen security options in versions later than JellyBean
-            // Hide notes in the "recent" app preview list
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        }
+
+        // Additional screen security options in versions later than JellyBean
+        // Hide notes in the "recent" app preview
+        // Removed the 'if' check because we raised the minimum SDK to 21
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
         // Load the view and show a password prompt to decrypt the content.
         setContentView(R.layout.activity_main);
-        tagLayout = (LinearLayout) findViewById(R.id.tags);
-        listView = (ListView) findViewById(R.id.listview);
+        tagLayout = findViewById(R.id.tags);
+        listView = findViewById(R.id.listview);
         context = ActivityMain.this;
-        intent = getIntent(); // Any pending intents are handled after decryption
+        intent = getIntent();   // Any pending intents are handled after decryption
         noteManager = new NoteManager(context);
 
         // Start accepting a hardware based authentication method
@@ -145,17 +145,16 @@ public class ActivityMain extends Activity {
     public static void handleIntents() {
         if (intent.getType() != null) {
             if (intent.getType().equals("application/octet-stream")) {
-                // Accept any encrypted notes file
-                // TODO: prompt for storage permission if not already given
-                Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
-                String path = uri.getLastPathSegment().replace("raw:", "");
                 try {
+                    // Accept any encrypted notes file
+                    // TODO: prompt for storage permission if not already given
+                    Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
+                    String path = uri.getLastPathSegment().replace("raw:", "");
                     String content = NoteManager.getFileContent(new FileInputStream(new File(path)));
                     Log.e("NOTES", content);
+
                     // TODO: If the file is encrypted then prompt for a decryption key
                     // TODO: Delete current contents and encrypt the imported file
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -207,6 +206,7 @@ public class ActivityMain extends Activity {
             case R.id.add:
                 noteContentPreview(true, context, null);
                 break;
+
             case R.id.backup:
                 Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                 intent.setType("*/");
@@ -215,6 +215,7 @@ public class ActivityMain extends Activity {
                 Toast.makeText(context, "Select a location to export the encrypted notes to.",
                         Toast.LENGTH_LONG).show();
                 break;
+
             case R.id.importDatabase:
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
@@ -223,12 +224,15 @@ public class ActivityMain extends Activity {
                         Toast.LENGTH_LONG).show();
                 // `onActivityResult` is automatically called after an import file has been selected
                 break;
+
             case R.id.password:
                 Dialogs.showNewMasterPasswordDialog(context);
                 break;
+
             case R.id.partialPass:
                 Dialogs.showPartialPass(context);
                 break;
+
             case R.id.deleteAll:
                 Dialogs.showDeleteConfirmation(
                         true, context, "Delete All Notes?",
@@ -253,8 +257,6 @@ public class ActivityMain extends Activity {
                         .getLaunchIntentForPackage( getBaseContext().getPackageName() );
                 i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
