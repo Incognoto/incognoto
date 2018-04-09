@@ -6,6 +6,7 @@ package com.notes.incognoto.core;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -114,10 +115,9 @@ public class NoteManager {
     }
 
     // Copy the encrypted notes file to the "Downloads" folder
-    public static void backup() {
+    public static void backup(String path) {
         try {
-            File file = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS).getPath(), fileName);
+            File file = new File(path, fileName);
             FileOutputStream output = new FileOutputStream(file);
             output.write((getFileContent(context.openFileInput("notes")) + "\n").getBytes());
             output.close();

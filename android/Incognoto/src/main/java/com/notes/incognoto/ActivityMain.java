@@ -20,6 +20,7 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -205,7 +206,9 @@ public class ActivityMain extends Activity {
                 noteContentPreview(true, context, null);
                 break;
             case R.id.backup:
-                NoteManager.backup();
+                Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                intent.setType("*/");
+                startActivityForResult(backupIntent, 11);
                 Dialogs.showExportDialog(context);
                 break;
             case R.id.importDatabase:
@@ -228,18 +231,28 @@ public class ActivityMain extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == 10 && data !=  null) {
-            Uri uri = (Uri) data.getData();
+            Uri uri = data.getData();
+//            String path = uri.getPath();
             String path = uri.getLastPathSegment();
             String content = null;
             try {
                 content = NoteManager.getFileContent(new FileInputStream(new File(path)));
                 Log.e("NOTESCONTENT", content);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
             // TODO: prompt for decryption phrase
+        }
+
+        if (requestCode == 11 && data != null) {
+            Uri uri = data.getData();
+            try {
+                String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
+                path = path.replace("primary:", "").concat("/");
+                NoteManager.backup(path);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
         }
     }
 
