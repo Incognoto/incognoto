@@ -42,7 +42,7 @@ public class Dialogs {
         dialogBuilder.setCancelable(false);
 
         // If a default password is being used then display the generated password.
-        String message = "\"notes.encrypted\" has been saved to your \"downloads\" folder. You will need your password to import it elsewhere.";
+        String message = "\"notes.encrypted\" has been saved to your selected folder. You will need your password to import it elsewhere.";
         dialogBuilder.setMessage(message);
 
         dialogBuilder.setNegativeButton("Done", new DialogInterface.OnClickListener() {

@@ -208,15 +208,19 @@ public class ActivityMain extends Activity {
                 noteContentPreview(true, context, null);
                 break;
             case R.id.backup:
-                NoteManager.backup();
+                Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                intent.setType("*/");
+                startActivityForResult(backupIntent, 11);
                 Dialogs.showExportDialog(context);
+                Toast.makeText(context, "Select a location to export the encrypted notes to.",
+                        Toast.LENGTH_LONG).show();
                 break;
             case R.id.importDatabase:
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
                 startActivityForResult(intent, 10);
                 Toast.makeText(context, "Pick an encrypted notes file to import",
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_LONG).show();
                 // `onActivityResult` is automatically called after an import file has been selected
                 break;
             case R.id.password:
@@ -255,6 +259,17 @@ public class ActivityMain extends Activity {
                 e.printStackTrace();
             }
             // TODO: prompt for decryption phrase
+        }
+
+        if (requestCode == 11 && data != null) {
+            Uri uri = data.getData();
+            try {
+                String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
+                path = path.replace("primary:", "").concat("/");
+                NoteManager.backup(path);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
         }
     }
 
