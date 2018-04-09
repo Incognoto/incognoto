@@ -59,11 +59,11 @@ public class NoteSearch {
             int j  = searchOperands.get(i);
             if(j==-1)
                 initSearch(searchWords.get(i));
-            if(j==0)
+            else if(j==0)
                 andOperation(searchWords.get(i));
-            if(j==1)
+            else if(j==1)
                 orOperation(searchWords.get(i));
-            if(j==2)
+            else if(j==2)
                 notOperation(searchWords.get(i));
         }
 
@@ -113,7 +113,7 @@ public class NoteSearch {
     }
     private void orOperation(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().contains(search)){
+            if(noteList.get(i).getNoteContent().contains(search) && notDuplicate(noteList.get(i))){
                 addToFoundNotes(noteList.get(i));
             }
         }
@@ -127,4 +127,12 @@ public class NoteSearch {
         }
     }
 
+    private boolean notDuplicate(Note note){
+        for(int i = 0; i < foundNoteList.size(); i++){
+            if(foundNoteList.get(i) == note){
+                return false;
+            }
+        }
+        return true;
+    }
 }
