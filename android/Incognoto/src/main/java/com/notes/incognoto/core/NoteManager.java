@@ -356,9 +356,9 @@ public class NoteManager {
 
         if (showWelcomeNotes) {
             // Add the default notes to the encrypted contents so serve as examples
-            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_3)));
-            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_2)));
             adapter.add(new Note(context.getResources().getString(R.string.welcome_note_1)));
+            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_2)));
+            adapter.add(new Note(context.getResources().getString(R.string.welcome_note_3)));
         }
         saveChanges(adapter, false);
     }

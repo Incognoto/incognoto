@@ -225,9 +225,6 @@ public class ActivityMain extends Activity {
             case R.id.password:
                 Dialogs.showNewMasterPasswordDialog(context);
                 break;
-            case R.id.partialPass:
-                Dialogs.showPartialPass(context);
-                break;
             case R.id.deleteAll:
                 Dialogs.showDeleteConfirmation(
                         true, context, "Delete All Notes?",

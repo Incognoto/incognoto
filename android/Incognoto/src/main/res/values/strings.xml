@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2018 Server Under the Mountain (SUM) License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html-->
 <resources>
-    <string name="welcome_note_1">#Privacy\nAll notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.</string>
-    <string name="welcome_note_2">#Security\nBy default your notes are encrypted using a cryptographically secure generated password. With options for a custom password, partial password/pin, or hardware key, Incognoto offers the most advanced security standards.</string>
+    <string name="welcome_note_1">#Security\nAll notes are encrypted and data never leaves your device without your permission.</string>
+    <string name="welcome_note_2">#Privacy\nThere are no trackers, no ads, no internet connections, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.</string>
     <string name="welcome_note_3">#Backups\nFor when life’s accidents happen, you can rest assured that your data is available only to you. Store encrypted backups on any cloud while keeping your data locked behind your password.</string>
 </resources>

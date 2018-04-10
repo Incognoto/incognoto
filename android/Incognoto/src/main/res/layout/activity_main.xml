@@ -11,18 +11,16 @@
     <!--Tag buttons are loaded into this view-->
     <HorizontalScrollView
         android:id="@+id/tagLayout"
-        android:maxWidth="400dp"
         android:layout_width="match_parent"
-        android:paddingTop="8dp"
-        android:layout_marginLeft="8dp"
         android:scrollbars="none"
         android:layout_height="wrap_content">
 
         <LinearLayout
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
             android:id="@+id/tags"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_gravity="center"
             android:layout_height="wrap_content">
 
         </LinearLayout>
