@@ -5,8 +5,13 @@
 <a href=""><img src="https://github.com/Collinux/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 </p>
 
+<p align="center">
+<img src="https://github.com/Collinux/incognoto/blob/master/images/welcome.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/main_1.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/edit_note.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/change_pass.png" width="200">
+</p>
+
 ### Security & Privacy Made Simple
 All notes are encrypted and data never leaves your device without your permission. There are no trackers, no ads, and no intrusive device permissions. We do not collect, sell, or share your information since Incognoto is entirely free and open source.
+
 
 ### Safely Backup Anywhere
 For when life’s accidents happen, you can rest assured that your data is available only to you. Store encrypted backups on any cloud while keeping your data locked behind your own password. Incognoto has zero knowledge of your notes so if you lose your password then we are not able to recover any data.
