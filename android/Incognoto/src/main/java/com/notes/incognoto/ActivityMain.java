@@ -37,6 +37,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.Toast;
 
@@ -63,6 +64,7 @@ public class ActivityMain extends Activity {
     public static LinearLayout tagLayout;
     public static ListView listView;
     public static Context context;
+    public static ProgressBar progressSpinner;
 
     // Used to import/export and unlock contents
     public static NoteManager noteManager;
@@ -84,10 +86,6 @@ public class ActivityMain extends Activity {
 
         // Secure the view: disable screenshots and block other apps from acquiring screen content
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-
-        // Additional screen security options in versions later than JellyBean
-        // Hide notes in the "recent" app preview
-        // Removed the 'if' check because we raised the minimum SDK to 21
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
@@ -95,6 +93,7 @@ public class ActivityMain extends Activity {
         setContentView(R.layout.activity_main);
         tagLayout = findViewById(R.id.tags);
         listView = findViewById(R.id.listview);
+        progressSpinner = findViewById(R.id.progressBar);
         context = ActivityMain.this;
 
         // Any pending intents are handled after decryption

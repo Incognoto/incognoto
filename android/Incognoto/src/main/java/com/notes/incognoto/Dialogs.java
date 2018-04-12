@@ -36,26 +36,6 @@ public class Dialogs {
 
     public static Dialog passwordDialog;
 
-    // Displayed after the notes file has been written to external storage
-    public static void showExportDialog(final Context context) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
-        dialogBuilder.setTitle("Export Successful");
-        dialogBuilder.setCancelable(false);
-
-        // If a default password is being used then display the generated password.
-        String message = "\"notes.encrypted\" has been saved to your selected folder. You will need your password to import it elsewhere.";
-        dialogBuilder.setMessage(message);
-
-        dialogBuilder.setNegativeButton("Done", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.cancel();
-            }
-        });
-        AlertDialog alert = dialogBuilder.create();
-        alert.show();
-    }
-
-
     // Prompt user for password input and attempt to decrypt content
     public static void displayPasswordDialog(final NoteManager noteManager, final Context context, final String title) {
         passwordDialog = new Dialog(context);
@@ -67,8 +47,8 @@ public class Dialogs {
         passwordDialog.setTitle(title);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(passwordDialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.FILL_PARENT;
-        lp.height = WindowManager.LayoutParams.FILL_PARENT;
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
         final EditText input = (EditText) passwordDialog.findViewById(R.id.input);
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {

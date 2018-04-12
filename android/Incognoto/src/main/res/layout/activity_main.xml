@@ -28,6 +28,16 @@
 
     </HorizontalScrollView>
 
+    <!--Shows when content is being decrypted-->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="51dp" />
+
     <!--Main content - shows notes-->
     <ListView
         android:focusable="true"

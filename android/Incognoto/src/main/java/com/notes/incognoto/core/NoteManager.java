@@ -89,6 +89,7 @@ public class NoteManager {
             adapter.addAll(notes);
             showTagUI();
             ActivityMain.handleIntents();
+            ActivityMain.progressSpinner.setVisibility(View.GONE);
         }
         return "";
     }
@@ -367,6 +368,7 @@ public class NoteManager {
     // Decrypt the private internal notes, given a valid password in the NoteManager constructor.
     // If the key phrase does not decrypt the content or there's any error then return a null list of Notes.
     public static List<Note> decrypt() {
+        ActivityMain.progressSpinner.setVisibility(View.VISIBLE); // Started decrypting, show progress
         try {
             // Read the cipher text
             FileInputStream fileInputStream = context.openFileInput("notes");
@@ -407,6 +409,7 @@ public class NoteManager {
                 Note target = new Note(content);
                 notes.add(target);
             }
+            ActivityMain.progressSpinner.setVisibility(View.GONE);
             return notes;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
