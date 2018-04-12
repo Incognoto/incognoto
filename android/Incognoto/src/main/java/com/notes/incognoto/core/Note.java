@@ -38,7 +38,7 @@ public class Note {
 
     // Search through the note content for items with "#tags"
     private void parseTags() {
-        Pattern tagPattern = Pattern.compile("#(\\w+)");
+        Pattern tagPattern = Pattern.compile("#(\\S+)");
         ArrayList<String> parsedTags = new ArrayList<String>();
         Matcher matcher = tagPattern.matcher(content);
         while (matcher.find())

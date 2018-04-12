@@ -112,8 +112,7 @@ public class ActivityMain extends Activity {
             Dialogs.showSetFirstPassword(context);
         } else {
             // Prompt for a password or a partial password if it has been enabled
-            String title = preferences.getBoolean("partialPass", false) ? "Partial Password" : "Password";
-            Dialogs.displayPasswordDialog(noteManager, context, title);
+            Dialogs.displayPasswordDialog(noteManager, context, "Password");
         }
     }
 
@@ -147,12 +146,11 @@ public class ActivityMain extends Activity {
     * Called when an NFC device is used when the app is in the foreground.
     */
     public static void handleHardwareKey(final String data) {
-        // TODO: re-enable
-//        if (noteManager.unlock(data) == null) {
-//            // Not currently the key. If it's unlocked then ask to use the NFC tag as the key.
-//            if (noteManager.status != null)
-//                Dialogs.setNewHardwareKey(context, data);
-//        }
+        if (noteManager.unlock(data) == null) {
+            // Not currently the key. If it's unlocked then ask to use the NFC tag as the key.
+            if (noteManager.status != null)
+                Dialogs.setNewHardwareKey(context, data);
+        }
     }
 
     // If you highlight text from another app you can select "share" then select this app.
@@ -207,13 +205,15 @@ public class ActivityMain extends Activity {
         return true;
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-
-        // Press back to close the app quickly and remove it from the recent tasks list
-        finishAndRemoveTask();
+        if (tagLayout.getChildCount() == 1 && tagLayout.getChildAt(0).getTag().equals("clearFilter")) {
+            // "Clear Filter" button is showing, allow back button to go back to main content
+            NoteManager.clearFilter();
+        } else {
+            // Press back to close the app quickly and remove it from the recent tasks list
+            finishAndRemoveTask();
+        }
     }
 
     @Override
@@ -234,6 +234,7 @@ public class ActivityMain extends Activity {
             case R.id.password:
                 Dialogs.showNewMasterPasswordDialog(context);
                 break;
+
             case R.id.deleteAll:
                 Dialogs.showDeleteConfirmation(
                         true, context, "Delete All Notes?",
@@ -266,7 +267,6 @@ public class ActivityMain extends Activity {
             Intent backupIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             intent.setType("*/");
             startActivityForResult(backupIntent, REQUEST_DIRECTORY_INTENT);
-            Dialogs.showExportDialog(context);
             Toast toast = Toast.makeText(context, "Select a location to export the encrypted notes to.",
                     Toast.LENGTH_LONG);
             toast.setGravity(Gravity.CENTER, 0, 0);
@@ -282,6 +282,7 @@ public class ActivityMain extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_FILE_INTENT && data != null) {
+            // Import encrypted file
             // Returned from file picker intent after a file was selected
             Uri uri = data.getData();
             String path = Environment.getExternalStorageDirectory().getPath() + "/" + uri.getLastPathSegment();
@@ -289,16 +290,19 @@ public class ActivityMain extends Activity {
             String content = null;
             try {
                 NoteManager.importFile(NoteManager.getFileContent(new FileInputStream(new File(path))));
+                // Success - re-load the activity with the new notes
                 Intent i = getBaseContext().getPackageManager()
-                        .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+                        .getLaunchIntentForPackage(getBaseContext().getPackageName());
                 i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
-            } catch (IOException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
+                Toast toast = Toast.makeText(context, "Error importing notes", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
             }
-        }
-
-        if (requestCode == REQUEST_DIRECTORY_INTENT && data != null) {
+        } else if (requestCode == REQUEST_DIRECTORY_INTENT && data != null) {
+            // Export / Backup
             // Returned from directory picker intent after an export directory was selected
             Uri uri = data.getData();
             try {
@@ -307,6 +311,9 @@ public class ActivityMain extends Activity {
                 NoteManager.backup(path);
             } catch (NullPointerException e) {
                 e.printStackTrace();
+                Toast toast = Toast.makeText(context, "Error selecting an export directory", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
             }
         }
     }

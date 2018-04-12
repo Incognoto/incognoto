@@ -36,6 +36,7 @@ public class Dialogs {
 
     public static Dialog passwordDialog;
 
+    // Displayed after the notes file has been written to external storage
     public static void showExportDialog(final Context context) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
         dialogBuilder.setTitle("Export Successful");
@@ -171,32 +172,7 @@ public class Dialogs {
         inputDialog.show();
     }
 
-    public static void showPartialPass(final Context context) {
-        final Dialog inputDialog = new Dialog(context);
-        inputDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        inputDialog.setContentView(R.layout.dialog_partial_pass);
-        inputDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(Color.DKGRAY));
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(inputDialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
-        // Make the initial setting match the check box state
-        final CheckBox checkBox = (CheckBox) inputDialog.findViewById(R.id.partialPassSetting);
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        final SharedPreferences.Editor editor = preferences.edit();
-        checkBox.setChecked(preferences.getBoolean("partialPass", false));
-        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                editor.putBoolean("partialPass", isChecked).commit();
-            }
-        });
-
-        inputDialog.show();
-    }
-
+    // Set a new password and re-encrypt the contents with the new password
     public static void showNewMasterPasswordDialog(final Context context) {
         final Dialog inputDialog = new Dialog(context);
         inputDialog.setContentView(R.layout.dialog_password_change);

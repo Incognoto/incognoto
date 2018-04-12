@@ -102,21 +102,16 @@ public class NoteManager {
             while ((line = br.readLine()) != null) {
                 allContent += line;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "";
-        }
-        try {
             fileInputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            return "";
         }
         return allContent;
     }
 
     // Copy the encrypted notes file to the "Downloads" folder
     public static void backup(String path) {
-        // TODO: ask for storage permission if not given
         try {
             File file = new File(path, fileName);
             FileOutputStream output = new FileOutputStream(file);
@@ -222,6 +217,7 @@ public class NoteManager {
                 // the tags layout that will allow users to clear the tag filter.
                 // This restores the state of the main activity's list view back to normal.
                 Button clearFilter = new Button(context);
+                clearFilter.setTag("clearFilter");
                 clearFilter.setText("Clear Filter For " + tag);
                 clearFilter.setLayoutParams(new LinearLayout.LayoutParams(
                         ActionBar.LayoutParams.WRAP_CONTENT, ActionBar.LayoutParams.WRAP_CONTENT));
@@ -229,15 +225,19 @@ public class NoteManager {
                     @Override
                     public void onClick(View v) {
                         // Restore the non-filtered adapter, rebuild the tags layout
-                        filteredAdapter.clear();
-                        ActivityMain.listView.setAdapter(adapter);
-                        showTagUI();
+                        clearFilter();
                     }
                 });
                 ActivityMain.tagLayout.addView(clearFilter, 0);
             }
         });
         return tagButton;
+    }
+
+    public static void clearFilter() {
+        filteredAdapter.clear();
+        ActivityMain.listView.setAdapter(adapter);
+        showTagUI();
     }
 
     // Remove a note and reload the list view to reflect the changes
@@ -269,20 +269,19 @@ public class NoteManager {
 
     // Given a user defined query return all Note objects that contain terms related to the query
     public static void search(String query) {
+        // Copy the list content for multi-threaded search
+        ArrayList<Note> noteArg = new ArrayList();
+        for (int i = 0; i < adapter.getCount(); i++) {
+            noteArg.add(adapter.getItem(i));
+        }
 
-            ArrayList<Note> noteArg = new ArrayList();
-            for(int i = 0;i<adapter.getCount();i++){
-                noteArg.add(adapter.getItem(i));
-            }
-            NoteSearch searchObj = new NoteSearch(noteArg,query);
-            ArrayList<Note> foundNotes = searchObj.getFoundNoteList();
-
-            for(int j = 0;j < foundNotes.size();j++){
-                filteredAdapter.add(foundNotes.get(j));
-            }
-
-            ActivityMain.listView.setAdapter(filteredAdapter);
-
+        // Given the query add the found notes to the list view
+        NoteSearch searchObj = new NoteSearch(noteArg, query);
+        ArrayList<Note> foundNotes = searchObj.getFoundNoteList();
+        for (int j = 0; j < foundNotes.size(); j++) {
+            filteredAdapter.add(foundNotes.get(j));
+        }
+        ActivityMain.listView.setAdapter(filteredAdapter);
     }
 
 
@@ -313,13 +312,15 @@ public class NoteManager {
     }
 
     // Override the existing internal notes file with an inbound cipher string
-    public static void importFile(String cipherText) {
+    public static String importFile(String cipherText) {
         try {
             FileOutputStream cipherStream = context.openFileOutput("notes", MODE_PRIVATE);
             cipherStream.write(cipherText.getBytes());
             cipherStream.close();
+            return "";
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
     }
 
