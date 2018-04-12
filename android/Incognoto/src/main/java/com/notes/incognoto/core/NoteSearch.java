@@ -75,17 +75,17 @@ public class NoteSearch {
         searchOperands.add(-1);
         for(int i = 0; i < search.length(); i++){
             if(search.charAt(i) == '+'){
-                searchWords.add(sb.toString());
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(0);
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '|' ){
-                searchWords.add(sb.toString());
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(1);
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '~'){
-                searchWords.add(sb.toString());
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(2);
                 sb = new StringBuilder();
             }
@@ -93,19 +93,19 @@ public class NoteSearch {
                 sb.append(search.charAt(i));
             }
         }
-        searchWords.add(sb.toString());
+        searchWords.add(sb.toString().toLowerCase());
     }
 
     private void initSearch(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().contains(search)){
+            if(noteList.get(i).getNoteContent().toLowerCase().contains(search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void andOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(!foundNoteList.get(i).getNoteContent().contains(search)){
+            if(!foundNoteList.get(i).getNoteContent().toLowerCase().contains(search)){
                 foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
@@ -113,14 +113,14 @@ public class NoteSearch {
     }
     private void orOperation(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().contains(search) && notDuplicate(noteList.get(i))){
+            if(noteList.get(i).getNoteContent().toLowerCase().contains(search) && notDuplicate(noteList.get(i))){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void notOperation(String search) {
         for (int i = 0; i < foundNoteList.size(); i++) {
-            if (foundNoteList.get(i).getNoteContent().contains(search)) {
+            if (foundNoteList.get(i).getNoteContent().toLowerCase().contains(search)) {
                 foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
