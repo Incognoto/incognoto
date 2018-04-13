@@ -77,16 +77,19 @@ public class NoteSearch {
             if(search.charAt(i) == '+'){
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(0);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '|' ){
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(1);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '~'){
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(2);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else{
