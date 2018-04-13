@@ -75,18 +75,21 @@ public class NoteSearch {
         searchOperands.add(-1);
         for(int i = 0; i < search.length(); i++){
             if(search.charAt(i) == '+'){
+                sb = cutOffSpace(sb);
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(0);
                 if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '|' ){
+                sb = cutOffSpace(sb);
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(1);
                 if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '~'){
+                sb = cutOffSpace(sb);
                 searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(2);
                 if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
@@ -96,6 +99,7 @@ public class NoteSearch {
                 sb.append(search.charAt(i));
             }
         }
+        sb = cutOffSpace(sb);
         searchWords.add(sb.toString().toLowerCase());
     }
 
@@ -137,5 +141,16 @@ public class NoteSearch {
             }
         }
         return true;
+    }
+
+    private StringBuilder cutOffSpace(StringBuilder sb){
+        int length = sb.length();
+        int lastIndex = length-1;
+        if(length > 0){
+            if(sb.charAt(lastIndex) == ' '){
+                sb.deleteCharAt(lastIndex);
+            }
+        }
+        return sb;
     }
 }
