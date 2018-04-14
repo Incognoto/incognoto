@@ -86,10 +86,11 @@ public class NoteManager {
             return null;
         } else {
             this.status = "Active";
+            ActivityMain.progressSpinner.setVisibility(View.GONE);
             adapter.addAll(notes);
             showTagUI();
+            Dialogs.passwordDialog.dismiss();
             ActivityMain.handleIntents();
-            ActivityMain.progressSpinner.setVisibility(View.GONE);
         }
         return "";
     }
@@ -127,7 +128,6 @@ public class NoteManager {
 
     // Starts an asynchronous call to save all notes in an encrypted state
     private static void saveChanges(final ArrayAdapter<Note> adapter, boolean newThread) {
-        status = "Active";
         if (newThread) {
             // This may be resource intensive, depending on the number of notes and the content,
             // so start this process on a new thread.
@@ -361,6 +361,7 @@ public class NoteManager {
             adapter.add(new Note(context.getResources().getString(R.string.welcome_note_1)));
             adapter.add(new Note(context.getResources().getString(R.string.welcome_note_2)));
             adapter.add(new Note(context.getResources().getString(R.string.welcome_note_3)));
+            status = "Active";
         }
         saveChanges(adapter, false);
     }
@@ -368,7 +369,6 @@ public class NoteManager {
     // Decrypt the private internal notes, given a valid password in the NoteManager constructor.
     // If the key phrase does not decrypt the content or there's any error then return a null list of Notes.
     public static List<Note> decrypt() {
-        ActivityMain.progressSpinner.setVisibility(View.VISIBLE); // Started decrypting, show progress
         try {
             // Read the cipher text
             FileInputStream fileInputStream = context.openFileInput("notes");
@@ -378,6 +378,7 @@ public class NoteManager {
             while ((line = br.readLine()) != null) {
                 allContent += line;
             }
+            ActivityMain.progressSpinner.setVisibility(View.VISIBLE); // Started decrypting, show progress
 
             // Decrypt the cipher text and add plain text note content to the main activity
             AesCbcWithIntegrity.SecretKeys key = null;

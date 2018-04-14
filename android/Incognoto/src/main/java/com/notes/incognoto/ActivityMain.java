@@ -145,11 +145,12 @@ public class ActivityMain extends Activity {
     * Called when an NFC device is used when the app is in the foreground.
     */
     public static void handleHardwareKey(final String data) {
-        if (noteManager.unlock(data) == null) {
-            // Not currently the key. If it's unlocked then ask to use the NFC tag as the key.
-            if (noteManager.status != null)
-                Dialogs.setNewHardwareKey(context, data);
+        if (noteManager.status == null) {
+            noteManager.unlock(data);
+        } else if (noteManager.unlock(data) == null) {
+            Dialogs.setNewHardwareKey(context, data);
         }
+        ActivityMain.progressSpinner.setVisibility(View.GONE);
     }
 
     // If you highlight text from another app you can select "share" then select this app.
