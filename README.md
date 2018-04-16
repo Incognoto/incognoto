@@ -1,12 +1,12 @@
 # Incognoto
 <p align="center">
-<img src="https://github.com/Collinux/incognoto/blob/master/images/incognoto.png?raw=true" width="230"><br>
+<img src="https://github.com/incognoto/incognoto/blob/master/images/incognoto.png?raw=true" width="230"><br>
 <b>Take control of your personal data with Incognoto, your secure incognito notes.</b><br><br>
 </p>
 
 <p align="center">
-<img src="https://github.com/Collinux/incognoto/blob/master/images/welcome.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/main_1.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/edit_note.png" width="200"><img src="https://github.com/Collinux/incognoto/blob/master/images/change_pass.png" width="200">
-<a href=""><img src="https://github.com/Collinux/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
+<img src="https://github.com/incognoto/incognoto/blob/master/images/welcome.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/main_1.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/edit_note.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/change_pass.png" width="200">
+<a href=""><img src="https://github.com/incognoto/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 </p>
 
 ### Security & Privacy Made Simple
