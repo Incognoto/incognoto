@@ -33,7 +33,6 @@
                 android:fadingEdge="vertical"
                 android:scrollbars="vertical"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:inputType="textMultiLine"
                 android:background="@android:color/transparent"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"

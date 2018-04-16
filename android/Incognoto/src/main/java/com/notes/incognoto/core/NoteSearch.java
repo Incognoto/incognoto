@@ -75,37 +75,44 @@ public class NoteSearch {
         searchOperands.add(-1);
         for(int i = 0; i < search.length(); i++){
             if(search.charAt(i) == '+'){
-                searchWords.add(sb.toString());
+                sb = cutOffSpace(sb);
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(0);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '|' ){
-                searchWords.add(sb.toString());
+                sb = cutOffSpace(sb);
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(1);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else if(search.charAt(i) == '~'){
-                searchWords.add(sb.toString());
+                sb = cutOffSpace(sb);
+                searchWords.add(sb.toString().toLowerCase());
                 searchOperands.add(2);
+                if(i+1<search.length()){if(search.charAt(i+1) == ' '){i++;}}
                 sb = new StringBuilder();
             }
             else{
                 sb.append(search.charAt(i));
             }
         }
-        searchWords.add(sb.toString());
+        sb = cutOffSpace(sb);
+        searchWords.add(sb.toString().toLowerCase());
     }
 
     private void initSearch(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().contains(search)){
+            if(noteList.get(i).getNoteContent().toLowerCase().contains(search)){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void andOperation(String search){
         for(int i = 0; i < foundNoteList.size(); i++){
-            if(!foundNoteList.get(i).getNoteContent().contains(search)){
+            if(!foundNoteList.get(i).getNoteContent().toLowerCase().contains(search)){
                 foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
@@ -113,14 +120,14 @@ public class NoteSearch {
     }
     private void orOperation(String search){
         for(int i = 0; i < noteList.size(); i++){
-            if(noteList.get(i).getNoteContent().contains(search) && notDuplicate(noteList.get(i))){
+            if(noteList.get(i).getNoteContent().toLowerCase().contains(search) && notDuplicate(noteList.get(i))){
                 addToFoundNotes(noteList.get(i));
             }
         }
     }
     private void notOperation(String search) {
         for (int i = 0; i < foundNoteList.size(); i++) {
-            if (foundNoteList.get(i).getNoteContent().contains(search)) {
+            if (foundNoteList.get(i).getNoteContent().toLowerCase().contains(search)) {
                 foundNoteList.remove(foundNoteList.get(i));
                 i--;
             }
@@ -134,5 +141,16 @@ public class NoteSearch {
             }
         }
         return true;
+    }
+
+    private StringBuilder cutOffSpace(StringBuilder sb){
+        int length = sb.length();
+        int lastIndex = length-1;
+        if(length > 0){
+            if(sb.charAt(lastIndex) == ' '){
+                sb.deleteCharAt(lastIndex);
+            }
+        }
+        return sb;
     }
 }

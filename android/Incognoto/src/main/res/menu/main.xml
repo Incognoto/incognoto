@@ -8,7 +8,8 @@
 
     <item
         android:id="@+id/search"
-        android:showAsAction="collapseActionView"
+        android:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_search"
         android:actionViewClass="android.widget.SearchView"
         android:title="Search"/>
 
@@ -31,11 +32,6 @@
         android:id="@+id/password"
         android:showAsAction="collapseActionView"
         android:title="Password"/>
-
-    <item
-        android:id="@+id/partialPass"
-        android:showAsAction="collapseActionView"
-        android:title="Partial Pass"/>
 
 </menu>
 

@@ -10,20 +10,14 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-    <!--For fingerprint authentication if the option is chosen-->
-    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="true" />
 
-    <uses-feature android:name="android.hardware.fingerprint"
-        android:required="true"/>
-
     <application
         android:icon="@drawable/ic_launcher"
         android:label="Notes"
-        android:theme="@android:style/Theme.DeviceDefault">
+        android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar">
 
         <!--Main UI-->
         <activity
