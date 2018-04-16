@@ -34,7 +34,11 @@ By default your data is encrypted with AES 256 using your custom password. Notes
 This project was developed at [The University of North Carolina at Greensboro](https://www.uncg.edu/) as a [Computer Science Undergraduate Capstone](https://www.uncg.edu/cmp/) project.
 
 <a href="https://github.com/collinux">@collinux</a>: Software Architecture & Design
+
 <a href="https://github.com/hahnalex">@hahnalex</a>: Android Developer
+
 <a href="https://github.com/jxDenney">@jxDenney</a>: Security Architect
+
 <a href="https://github.com/leroosje">@leroosje</a>: Project Manager & Android Developer
+
 <a href="https://github.com/maburke">@maburke</a>: Content Manager & Android Developer
