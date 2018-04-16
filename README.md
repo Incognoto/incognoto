@@ -6,7 +6,7 @@
 
 <p align="center">
 <img src="https://github.com/incognoto/incognoto/blob/master/images/welcome.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/main_1.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/edit_note.png" width="200"><img src="https://github.com/incognoto/incognoto/blob/master/images/change_pass.png" width="200">
-<a href=""><img src="https://github.com/incognoto/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
+<a href="https://play.google.com/store/apps/details?id=com.notes.incognoto"><img src="https://github.com/incognoto/incognoto/blob/master/images/google-play-badge.png?raw=true" width="220"></a>
 </p>
 
 ### Security & Privacy Made Simple
